@@ -7,28 +7,49 @@ import {
   Alert,
 } from 'react-native';
 
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../services/firebaseConfig';
 import { router } from 'expo-router';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+
+import { auth, db } from '../services/firebaseConfig';
 
 export default function Home() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
 
   async function fazerLogin() {
-  try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      senha
-    );
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        senha
+      );
 
-    console.log('Usuário logado:', userCredential.user.email);
+      const uid = userCredential.user.uid;
 
-    router.replace('/admin' as any);
-  } catch (error: any) {
-    Alert.alert('Erro', error.message);
-  }
+      const usuarioRef = doc(db, 'usuarios', uid);
+      const usuarioSnap = await getDoc(usuarioRef);
+
+      if (!usuarioSnap.exists()) {
+        Alert.alert(
+          'Erro',
+          'Usuário autenticado, mas não cadastrado no sistema.'
+        );
+        return;
+      }
+
+      const usuario = usuarioSnap.data();
+
+      if (usuario.tipo === 'admin') {
+        router.replace('/admin' as any);
+      } else if (usuario.tipo === 'promotor') {
+        router.replace('/promotor' as any);
+      } else {
+        Alert.alert('Erro', 'Tipo de usuário inválido.');
+      }
+    } catch (error: any) {
+      Alert.alert('Erro', error.message);
+    }
   }
 
   return (
