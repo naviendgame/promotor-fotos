@@ -174,6 +174,26 @@ export default function Promotor() {
       />
 
       <TouchableOpacity
+        onPress={() => router.push("/minhas_fotos" as any)}
+        style={{
+          backgroundColor: "#F59E0B",
+          padding: 15,
+          borderRadius: 10,
+          marginTop: 10,
+        }}
+      >
+        <Text
+          style={{
+            color: "white",
+            textAlign: "center",
+            fontWeight: "bold",
+          }}
+        >
+          Minhas Fotos
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         onPress={() => router.replace("/" as any)}
         style={{
           backgroundColor: "#444",
