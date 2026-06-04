@@ -8,10 +8,33 @@ import { auth, db } from "../services/firebaseConfig";
 
 export default function Admin() {
   const [totalLojas, setTotalLojas] = useState(0);
+  const [fotosHoje, setFotosHoje] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "lojas"), (snapshot) => {
       setTotalLojas(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "fotos"), (snapshot) => {
+      const hoje = new Date();
+
+      const fotosDoDia = snapshot.docs.filter((doc) => {
+        const data = doc.data().criadoEm?.toDate?.();
+
+        if (!data) return false;
+
+        return (
+          data.getDate() === hoje.getDate() &&
+          data.getMonth() === hoje.getMonth() &&
+          data.getFullYear() === hoje.getFullYear()
+        );
+      });
+
+      setFotosHoje(fotosDoDia.length);
     });
 
     return () => unsubscribe();
@@ -27,13 +50,7 @@ export default function Admin() {
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: "#121212",
-        padding: 20,
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: "#121212", padding: 20 }}>
       <Text
         style={{
           color: "white",
@@ -66,7 +83,7 @@ export default function Admin() {
             marginTop: 10,
           }}
         >
-          0
+          {fotosHoje}
         </Text>
       </View>
 
@@ -104,11 +121,7 @@ export default function Admin() {
         }}
       >
         <Text
-          style={{
-            color: "white",
-            textAlign: "center",
-            fontWeight: "bold",
-          }}
+          style={{ color: "white", textAlign: "center", fontWeight: "bold" }}
         >
           Cadastrar Loja
         </Text>
@@ -124,11 +137,7 @@ export default function Admin() {
         }}
       >
         <Text
-          style={{
-            color: "white",
-            textAlign: "center",
-            fontWeight: "bold",
-          }}
+          style={{ color: "white", textAlign: "center", fontWeight: "bold" }}
         >
           Ver Lojas
         </Text>
@@ -144,11 +153,7 @@ export default function Admin() {
         }}
       >
         <Text
-          style={{
-            color: "white",
-            textAlign: "center",
-            fontWeight: "bold",
-          }}
+          style={{ color: "white", textAlign: "center", fontWeight: "bold" }}
         >
           Cadastrar Promotor
         </Text>
@@ -164,11 +169,7 @@ export default function Admin() {
         }}
       >
         <Text
-          style={{
-            color: "white",
-            textAlign: "center",
-            fontWeight: "bold",
-          }}
+          style={{ color: "white", textAlign: "center", fontWeight: "bold" }}
         >
           Ver Fotos
         </Text>
@@ -184,11 +185,7 @@ export default function Admin() {
         }}
       >
         <Text
-          style={{
-            color: "white",
-            textAlign: "center",
-            fontWeight: "bold",
-          }}
+          style={{ color: "white", textAlign: "center", fontWeight: "bold" }}
         >
           Sair
         </Text>
