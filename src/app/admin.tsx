@@ -1,8 +1,10 @@
 import { router } from "expo-router";
+import { signOut } from "firebase/auth";
 import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { db } from "../services/firebaseConfig";
+
+import { auth, db } from "../services/firebaseConfig";
 
 export default function Admin() {
   const [totalLojas, setTotalLojas] = useState(0);
@@ -14,6 +16,15 @@ export default function Admin() {
 
     return () => unsubscribe();
   }, []);
+
+  async function sair() {
+    try {
+      await signOut(auth);
+      router.replace("/" as any);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   return (
     <View
@@ -140,6 +151,46 @@ export default function Admin() {
           }}
         >
           Cadastrar Promotor
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => router.push("/ver_fotos" as any)}
+        style={{
+          backgroundColor: "#F59E0B",
+          padding: 15,
+          borderRadius: 10,
+          marginTop: 10,
+        }}
+      >
+        <Text
+          style={{
+            color: "white",
+            textAlign: "center",
+            fontWeight: "bold",
+          }}
+        >
+          Ver Fotos
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={sair}
+        style={{
+          backgroundColor: "#DC2626",
+          padding: 15,
+          borderRadius: 10,
+          marginTop: 10,
+        }}
+      >
+        <Text
+          style={{
+            color: "white",
+            textAlign: "center",
+            fontWeight: "bold",
+          }}
+        >
+          Sair
         </Text>
       </TouchableOpacity>
     </View>
