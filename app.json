@@ -33,6 +33,14 @@
             "imageWidth": 76
           }
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Permita que o app acesse suas fotos.",
+          "savePhotosPermission": "Permita que o app salve fotos na galeria.",
+          "granularPermissions": ["photo"]
+        }
       ]
     ],
     "experiments": {

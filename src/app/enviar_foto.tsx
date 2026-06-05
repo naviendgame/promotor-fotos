@@ -1,11 +1,11 @@
 import { useState } from "react";
 import {
-    Alert,
-    Image,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import * as FileSystem from "expo-file-system/legacy";
@@ -25,12 +25,12 @@ export default function EnviarFoto() {
     const permissao = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permissao.granted) {
-      Alert.alert("Permissão necessária", "Permita acesso à câmera.");
+      Alert.alert("Permissao necessaria", "Permita acesso a camera.");
       return;
     }
 
     const resultado = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       quality: 0.5,
       allowsEditing: false,
     });
@@ -41,15 +41,8 @@ export default function EnviarFoto() {
   }
 
   async function escolherFoto() {
-    const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissao.granted) {
-      Alert.alert("Permissão necessária", "Permita acesso às fotos.");
-      return;
-    }
-
     const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       quality: 0.5,
       allowsEditing: false,
     });
@@ -62,14 +55,14 @@ export default function EnviarFoto() {
   async function enviarFoto() {
     try {
       if (!imagem) {
-        Alert.alert("Atenção", "Tire ou selecione uma foto primeiro.");
+        Alert.alert("Atencao", "Tire ou selecione uma foto primeiro.");
         return;
       }
 
       const usuarioAtual = auth.currentUser;
 
       if (!usuarioAtual) {
-        Alert.alert("Erro", "Usuário não encontrado.");
+        Alert.alert("Erro", "Usuario nao encontrado.");
         return;
       }
 
@@ -129,7 +122,7 @@ export default function EnviarFoto() {
         <Text
           style={{ color: "white", textAlign: "center", fontWeight: "bold" }}
         >
-          Tirar Foto com Câmera
+          Tirar Foto com Camera
         </Text>
       </TouchableOpacity>
 
@@ -162,7 +155,7 @@ export default function EnviarFoto() {
       )}
 
       <TextInput
-        placeholder="Observação"
+        placeholder="Observacao"
         placeholderTextColor="#888"
         value={observacao}
         onChangeText={setObservacao}
