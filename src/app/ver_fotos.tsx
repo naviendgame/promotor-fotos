@@ -6,6 +6,7 @@ import {
   Modal,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -64,6 +65,9 @@ export default function VerFotos() {
   const [fotoSelecionada, setFotoSelecionada] = useState<Foto | null>(null);
   const [menuAberto, setMenuAberto] = useState(false);
   const [salvandoFoto, setSalvandoFoto] = useState(false);
+  const [modalComentarioAberto, setModalComentarioAberto] = useState(false);
+  const [statusComComentario, setStatusComComentario] = useState("");
+  const [comentarioAdmin, setComentarioAdmin] = useState("");
 
   useEffect(() => {
     const q = query(collection(db, "fotos"), orderBy("criadoEm", "desc"));
@@ -188,15 +192,67 @@ export default function VerFotos() {
     try {
       await updateDoc(doc(db, "fotos", fotoSelecionada.id), {
         status,
+        comentarioAdmin:
+          status === "aprovada" ? "" : fotoSelecionada.comentarioAdmin || "",
       });
 
       setFotoSelecionada({
         ...fotoSelecionada,
         status,
+        comentarioAdmin:
+          status === "aprovada" ? "" : fotoSelecionada.comentarioAdmin || "",
       });
       setMenuAberto(false);
 
       Alert.alert("Sucesso", `Foto marcada como ${textoStatus(status)}.`);
+    } catch (error: any) {
+      console.log(error);
+      Alert.alert("Erro", error.message || "Nao foi possivel atualizar a foto.");
+    }
+  }
+
+  function abrirComentarioStatus(status: string) {
+    if (!fotoSelecionada) return;
+
+    setStatusComComentario(status);
+    setComentarioAdmin(fotoSelecionada.comentarioAdmin || "");
+    setMenuAberto(false);
+    setModalComentarioAberto(true);
+  }
+
+  function cancelarComentarioStatus() {
+    setModalComentarioAberto(false);
+    setStatusComComentario("");
+    setComentarioAdmin("");
+  }
+
+  async function salvarComentarioStatus() {
+    if (!fotoSelecionada || !statusComComentario) return;
+
+    const comentario = comentarioAdmin.trim();
+
+    if (!comentario) {
+      Alert.alert("Atencao", "Informe o motivo para o promotor.");
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, "fotos", fotoSelecionada.id), {
+        status: statusComComentario,
+        comentarioAdmin: comentario,
+      });
+
+      setFotoSelecionada({
+        ...fotoSelecionada,
+        status: statusComComentario,
+        comentarioAdmin: comentario,
+      });
+
+      cancelarComentarioStatus();
+      Alert.alert(
+        "Sucesso",
+        `Foto marcada como ${textoStatus(statusComComentario)}.`,
+      );
     } catch (error: any) {
       console.log(error);
       Alert.alert("Erro", error.message || "Nao foi possivel atualizar a foto.");
@@ -635,7 +691,7 @@ export default function VerFotos() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => atualizarStatusFoto("refazer")}
+                onPress={() => abrirComentarioStatus("refazer")}
                 style={{ padding: 12 }}
               >
                 <Text style={{ color: "#F59E0B", fontWeight: "bold" }}>
@@ -644,7 +700,7 @@ export default function VerFotos() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => atualizarStatusFoto("rejeitada")}
+                onPress={() => abrirComentarioStatus("rejeitada")}
                 style={{ padding: 12 }}
               >
                 <Text style={{ color: "#EF4444", fontWeight: "bold" }}>
@@ -712,8 +768,112 @@ export default function VerFotos() {
               >
                 Status: {textoStatus(obterStatus(fotoSelecionada))}
               </Text>
+              {fotoSelecionada.comentarioAdmin ? (
+                <Text style={{ color: "white", marginTop: 4, lineHeight: 20 }}>
+                  Comentario: {fotoSelecionada.comentarioAdmin}
+                </Text>
+              ) : null}
             </View>
           )}
+        </View>
+      </Modal>
+
+      <Modal
+        visible={modalComentarioAberto}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelarComentarioStatus}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.75)",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#1E1E1E",
+              borderRadius: 12,
+              padding: 18,
+            }}
+          >
+            <Text
+              style={{
+                color: "white",
+                fontSize: 20,
+                fontWeight: "bold",
+                marginBottom: 8,
+              }}
+            >
+              Motivo para {textoStatus(statusComComentario)}
+            </Text>
+
+            <Text style={{ color: "#aaa", marginBottom: 12 }}>
+              Esse comentario sera exibido para o promotor.
+            </Text>
+
+            <TextInput
+              value={comentarioAdmin}
+              onChangeText={setComentarioAdmin}
+              placeholder="Ex: Foto sem preco visivel"
+              placeholderTextColor="#777"
+              multiline
+              textAlignVertical="top"
+              style={{
+                minHeight: 110,
+                borderWidth: 1,
+                borderColor: "#444",
+                borderRadius: 10,
+                padding: 12,
+                color: "white",
+                marginBottom: 14,
+              }}
+            />
+
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity
+                onPress={cancelarComentarioStatus}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#444",
+                  padding: 14,
+                  borderRadius: 10,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={salvarComentarioStatus}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#2563EB",
+                  padding: 14,
+                  borderRadius: 10,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    textAlign: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Salvar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>

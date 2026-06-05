@@ -228,6 +228,32 @@ export default function MinhasFotos() {
                 Sem observação.
               </Text>
             )}
+
+            {item.comentarioAdmin ? (
+              <View
+                style={{
+                  backgroundColor: "#2A1F12",
+                  borderRadius: 10,
+                  padding: 12,
+                  marginTop: 10,
+                  borderWidth: 1,
+                  borderColor: "#F59E0B",
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#FBBF24",
+                    fontWeight: "bold",
+                    marginBottom: 4,
+                  }}
+                >
+                  Comentario do admin
+                </Text>
+                <Text style={{ color: "white", lineHeight: 20 }}>
+                  {item.comentarioAdmin}
+                </Text>
+              </View>
+            ) : null}
           </View>
         )}
       />
