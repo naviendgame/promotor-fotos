@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Alert,
   Image,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -15,11 +16,28 @@ import { router, useLocalSearchParams } from "expo-router";
 import { addDoc, collection } from "firebase/firestore";
 import { auth, db } from "../services/firebaseConfig";
 
+const categoriasFoto = [
+  "Gondola",
+  "Ponta",
+  "Ilha",
+  "Ruptura",
+  "Preco",
+  "Validade",
+  "Concorrente",
+  "Antes/depois",
+];
+
 export default function EnviarFoto() {
   const { lojaId, lojaNome } = useLocalSearchParams();
 
   const [imagem, setImagem] = useState<string | null>(null);
   const [observacao, setObservacao] = useState("");
+  const [categoria, setCategoria] = useState(categoriasFoto[0]);
+
+  function removerImagem() {
+    setImagem(null);
+    setCategoria(categoriasFoto[0]);
+  }
 
   async function tirarFoto() {
     const permissao = await ImagePicker.requestCameraPermissionsAsync();
@@ -78,6 +96,9 @@ export default function EnviarFoto() {
         promotorId: usuarioAtual.uid,
         promotorEmail: usuarioAtual.email,
         imagemBase64: imagemFormatada,
+        categoria,
+        status: "pendente",
+        comentarioAdmin: "",
         observacao,
         criadoEm: new Date(),
       });
@@ -86,6 +107,7 @@ export default function EnviarFoto() {
 
       setImagem(null);
       setObservacao("");
+      setCategoria(categoriasFoto[0]);
 
       router.back();
     } catch (error: any) {
@@ -95,7 +117,11 @@ export default function EnviarFoto() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#121212", padding: 20 }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: "#121212" }}
+      contentContainerStyle={{ padding: 20, paddingBottom: 30 }}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text
         style={{
           color: "white",
@@ -143,15 +169,88 @@ export default function EnviarFoto() {
       </TouchableOpacity>
 
       {imagem && (
-        <Image
-          source={{ uri: imagem }}
+        <View
           style={{
             width: "100%",
             height: 250,
-            borderRadius: 10,
             marginBottom: 15,
+            position: "relative",
           }}
-        />
+        >
+          <Image
+            source={{ uri: imagem }}
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: 10,
+            }}
+            resizeMode="cover"
+          />
+
+          <TouchableOpacity
+            onPress={removerImagem}
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: "rgba(0,0,0,0.75)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: "white", fontSize: 22, fontWeight: "bold" }}>
+              X
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {imagem && (
+        <View style={{ marginBottom: 15 }}>
+          <Text
+            style={{
+              color: "white",
+              fontSize: 16,
+              fontWeight: "bold",
+              marginBottom: 8,
+            }}
+          >
+            Categoria da foto
+          </Text>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ maxHeight: 44 }}
+            contentContainerStyle={{
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {categoriasFoto.map((item) => (
+              <TouchableOpacity
+                key={item}
+                onPress={() => setCategoria(item)}
+                style={{
+                  backgroundColor: categoria === item ? "#2563EB" : "#1E1E1E",
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 18,
+                  minHeight: 36,
+                  justifyContent: "center",
+                  alignSelf: "flex-start",
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "bold" }}>
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
       )}
 
       <TextInput
@@ -199,6 +298,6 @@ export default function EnviarFoto() {
           Voltar
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }

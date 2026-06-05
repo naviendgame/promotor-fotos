@@ -19,6 +19,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
 } from "firebase/firestore";
 import * as FileSystem from "expo-file-system/legacy";
 import * as MediaLibrary from "expo-media-library/legacy";
@@ -31,14 +32,34 @@ type Foto = {
   promotorEmail: string;
   observacao: string;
   imagemBase64: string;
+  categoria?: string;
+  status?: string;
+  comentarioAdmin?: string;
   criadoEm: any;
 };
+
+const categoriasFoto = [
+  "Todas",
+  "Gondola",
+  "Ponta",
+  "Ilha",
+  "Ruptura",
+  "Preco",
+  "Validade",
+  "Concorrente",
+  "Antes/depois",
+  "Sem categoria",
+];
+
+const statusFotos = ["Todos", "pendente", "aprovada", "refazer", "rejeitada"];
 
 export default function VerFotos() {
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [lojaFiltro, setLojaFiltro] = useState("Todas");
   const [promotorFiltro, setPromotorFiltro] = useState("Todos");
   const [filtroHoje, setFiltroHoje] = useState(false);
+  const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
+  const [statusFiltro, setStatusFiltro] = useState("Todos");
 
   const [fotoSelecionada, setFotoSelecionada] = useState<Foto | null>(null);
   const [menuAberto, setMenuAberto] = useState(false);
@@ -84,6 +105,28 @@ export default function VerFotos() {
   function abrirFoto(foto: Foto) {
     setFotoSelecionada(foto);
     setMenuAberto(false);
+  }
+
+  function obterCategoria(foto: Foto) {
+    return foto.categoria || "Sem categoria";
+  }
+
+  function obterStatus(foto: Foto) {
+    return foto.status || "pendente";
+  }
+
+  function textoStatus(status: string) {
+    if (status === "aprovada") return "Aprovada";
+    if (status === "refazer") return "Refazer";
+    if (status === "rejeitada") return "Rejeitada";
+    return "Pendente";
+  }
+
+  function corStatus(status: string) {
+    if (status === "aprovada") return "#16A34A";
+    if (status === "refazer") return "#F59E0B";
+    if (status === "rejeitada") return "#EF4444";
+    return "#2563EB";
   }
 
   function fecharFoto() {
@@ -139,6 +182,27 @@ export default function VerFotos() {
     }
   }
 
+  async function atualizarStatusFoto(status: string) {
+    if (!fotoSelecionada) return;
+
+    try {
+      await updateDoc(doc(db, "fotos", fotoSelecionada.id), {
+        status,
+      });
+
+      setFotoSelecionada({
+        ...fotoSelecionada,
+        status,
+      });
+      setMenuAberto(false);
+
+      Alert.alert("Sucesso", `Foto marcada como ${textoStatus(status)}.`);
+    } catch (error: any) {
+      console.log(error);
+      Alert.alert("Erro", error.message || "Nao foi possivel atualizar a foto.");
+    }
+  }
+
   function confirmarExcluirFoto() {
     if (!fotoSelecionada) return;
 
@@ -173,8 +237,18 @@ export default function VerFotos() {
       promotorFiltro === "Todos" || foto.promotorEmail === promotorFiltro;
 
     const filtroDataOk = !filtroHoje || ehHoje(foto.criadoEm);
+    const filtroCategoriaOk =
+      categoriaFiltro === "Todas" || obterCategoria(foto) === categoriaFiltro;
+    const filtroStatusOk =
+      statusFiltro === "Todos" || obterStatus(foto) === statusFiltro;
 
-    return filtroLojaOk && filtroPromotorOk && filtroDataOk;
+    return (
+      filtroLojaOk &&
+      filtroPromotorOk &&
+      filtroDataOk &&
+      filtroCategoriaOk &&
+      filtroStatusOk
+    );
   });
 
   return (
@@ -314,6 +388,78 @@ export default function VerFotos() {
                 <Text style={{ color: "white", fontWeight: "bold" }}>Hoje</Text>
               </TouchableOpacity>
             </View>
+
+            <Text
+              style={{
+                color: "white",
+                fontSize: 16,
+                fontWeight: "bold",
+                marginBottom: 8,
+              }}
+            >
+              Filtrar por categoria
+            </Text>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 15 }}
+            >
+              {categoriasFoto.map((categoria) => (
+                <TouchableOpacity
+                  key={categoria}
+                  onPress={() => setCategoriaFiltro(categoria)}
+                  style={{
+                    backgroundColor:
+                      categoriaFiltro === categoria ? "#F59E0B" : "#1E1E1E",
+                    paddingVertical: 10,
+                    paddingHorizontal: 14,
+                    borderRadius: 20,
+                    marginRight: 8,
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "bold" }}>
+                    {categoria}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text
+              style={{
+                color: "white",
+                fontSize: 16,
+                fontWeight: "bold",
+                marginBottom: 8,
+              }}
+            >
+              Filtrar por status
+            </Text>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 20 }}
+            >
+              {statusFotos.map((status) => (
+                <TouchableOpacity
+                  key={status}
+                  onPress={() => setStatusFiltro(status)}
+                  style={{
+                    backgroundColor:
+                      statusFiltro === status ? "#0EA5E9" : "#1E1E1E",
+                    paddingVertical: 10,
+                    paddingHorizontal: 14,
+                    borderRadius: 20,
+                    marginRight: 8,
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "bold" }}>
+                    {status === "Todos" ? "Todos" : textoStatus(status)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         }
         ListEmptyComponent={
@@ -347,6 +493,41 @@ export default function VerFotos() {
             <Text style={{ color: "#aaa", marginTop: 5, marginBottom: 10 }}>
               🕒 {formatarData(item.criadoEm)}
             </Text>
+
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+                marginBottom: 10,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#312E81",
+                  borderRadius: 20,
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "bold" }}>
+                  {obterCategoria(item)}
+                </Text>
+              </View>
+
+              <View
+                style={{
+                  backgroundColor: corStatus(obterStatus(item)),
+                  borderRadius: 20,
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "bold" }}>
+                  {textoStatus(obterStatus(item))}
+                </Text>
+              </View>
+            </View>
 
             <TouchableOpacity onPress={() => abrirFoto(item)}>
               <Image
@@ -445,6 +626,33 @@ export default function VerFotos() {
               </TouchableOpacity>
 
               <TouchableOpacity
+                onPress={() => atualizarStatusFoto("aprovada")}
+                style={{ padding: 12 }}
+              >
+                <Text style={{ color: "#16A34A", fontWeight: "bold" }}>
+                  Aprovar
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => atualizarStatusFoto("refazer")}
+                style={{ padding: 12 }}
+              >
+                <Text style={{ color: "#F59E0B", fontWeight: "bold" }}>
+                  Pedir refazer
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => atualizarStatusFoto("rejeitada")}
+                style={{ padding: 12 }}
+              >
+                <Text style={{ color: "#EF4444", fontWeight: "bold" }}>
+                  Rejeitar
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 onPress={confirmarExcluirFoto}
                 style={{ padding: 12 }}
               >
@@ -491,6 +699,18 @@ export default function VerFotos() {
               </Text>
               <Text style={{ color: "#aaa", marginTop: 4 }}>
                 🕒 {formatarData(fotoSelecionada.criadoEm)}
+              </Text>
+              <Text style={{ color: "#aaa", marginTop: 4 }}>
+                Categoria: {obterCategoria(fotoSelecionada)}
+              </Text>
+              <Text
+                style={{
+                  color: corStatus(obterStatus(fotoSelecionada)),
+                  marginTop: 4,
+                  fontWeight: "bold",
+                }}
+              >
+                Status: {textoStatus(obterStatus(fotoSelecionada))}
               </Text>
             </View>
           )}

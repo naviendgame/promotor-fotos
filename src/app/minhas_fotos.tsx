@@ -12,8 +12,33 @@ type Foto = {
   promotorEmail: string;
   observacao: string;
   imagemBase64: string;
+  categoria?: string;
+  status?: string;
+  comentarioAdmin?: string;
   criadoEm: any;
 };
+
+function obterCategoria(foto: Foto) {
+  return foto.categoria || "Sem categoria";
+}
+
+function obterStatus(foto: Foto) {
+  return foto.status || "pendente";
+}
+
+function textoStatus(status: string) {
+  if (status === "aprovada") return "Aprovada";
+  if (status === "refazer") return "Refazer";
+  if (status === "rejeitada") return "Rejeitada";
+  return "Pendente";
+}
+
+function corStatus(status: string) {
+  if (status === "aprovada") return "#16A34A";
+  if (status === "refazer") return "#F59E0B";
+  if (status === "rejeitada") return "#EF4444";
+  return "#2563EB";
+}
 
 export default function MinhasFotos() {
   const [fotos, setFotos] = useState<Foto[]>([]);
@@ -134,6 +159,41 @@ export default function MinhasFotos() {
             >
               🕒 {formatarData(item.criadoEm)}
             </Text>
+
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+                marginBottom: 10,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#312E81",
+                  borderRadius: 20,
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "bold" }}>
+                  {obterCategoria(item)}
+                </Text>
+              </View>
+
+              <View
+                style={{
+                  backgroundColor: corStatus(obterStatus(item)),
+                  borderRadius: 20,
+                  paddingVertical: 6,
+                  paddingHorizontal: 10,
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "bold" }}>
+                  {textoStatus(obterStatus(item))}
+                </Text>
+              </View>
+            </View>
 
             <Image
               source={{
