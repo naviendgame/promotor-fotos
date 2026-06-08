@@ -23,7 +23,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import * as FileSystem from "expo-file-system/legacy";
-import * as MediaLibrary from "expo-media-library/legacy";
+import * as MediaLibrary from "expo-media-library";
 
 import { db } from "../services/firebaseConfig";
 
