@@ -9,11 +9,11 @@ import {
   View,
 } from "react-native";
 
-import * as FileSystem from "expo-file-system/legacy";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../services/firebaseConfig";
 
 const categoriasFoto = [
@@ -27,12 +27,44 @@ const categoriasFoto = [
   "Antes/depois",
 ];
 
+const LIMITE_FIRESTORE_STRING = 900_000;
+
+async function prepararImagemBase64(uri: string) {
+  const tentativas = [
+    { width: 1000, compress: 0.45 },
+    { width: 800, compress: 0.35 },
+    { width: 640, compress: 0.28 },
+  ];
+
+  for (const tentativa of tentativas) {
+    const resultado = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: tentativa.width } }],
+      {
+        base64: true,
+        compress: tentativa.compress,
+        format: ImageManipulator.SaveFormat.JPEG,
+      },
+    );
+
+    const imagemBase64 = resultado.base64 || "";
+    const imagemFormatada = `data:image/jpeg;base64,${imagemBase64}`;
+
+    if (imagemFormatada.length <= LIMITE_FIRESTORE_STRING) {
+      return imagemFormatada;
+    }
+  }
+
+  throw new Error("A foto ainda ficou muito grande. Tente tirar a foto mais longe ou com menos detalhes.");
+}
+
 export default function EnviarFoto() {
   const { lojaId, lojaNome } = useLocalSearchParams();
 
   const [imagem, setImagem] = useState<string | null>(null);
   const [observacao, setObservacao] = useState("");
   const [categoria, setCategoria] = useState(categoriasFoto[0]);
+  const [enviando, setEnviando] = useState(false);
 
   function removerImagem() {
     setImagem(null);
@@ -71,6 +103,8 @@ export default function EnviarFoto() {
   }
 
   async function enviarFoto() {
+    if (enviando) return;
+
     try {
       if (!imagem) {
         Alert.alert("Atencao", "Tire ou selecione uma foto primeiro.");
@@ -84,23 +118,21 @@ export default function EnviarFoto() {
         return;
       }
 
-      const imagemBase64 = await FileSystem.readAsStringAsync(imagem, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      setEnviando(true);
 
-      const imagemFormatada = `data:image/jpeg;base64,${imagemBase64}`;
+      const imagemBase64 = await prepararImagemBase64(imagem);
 
       await addDoc(collection(db, "fotos"), {
         lojaId,
         lojaNome,
         promotorId: usuarioAtual.uid,
         promotorEmail: usuarioAtual.email,
-        imagemBase64: imagemFormatada,
+        imagemBase64,
         categoria,
         status: "pendente",
         comentarioAdmin: "",
         observacao,
-        criadoEm: new Date(),
+        criadoEm: serverTimestamp(),
       });
 
       Alert.alert("Sucesso", "Foto enviada com sucesso!");
@@ -113,6 +145,8 @@ export default function EnviarFoto() {
     } catch (error: any) {
       console.log(error);
       Alert.alert("Erro", error.message);
+    } finally {
+      setEnviando(false);
     }
   }
 
@@ -270,8 +304,9 @@ export default function EnviarFoto() {
 
       <TouchableOpacity
         onPress={enviarFoto}
+        disabled={enviando}
         style={{
-          backgroundColor: "#16A34A",
+          backgroundColor: enviando ? "#64748B" : "#16A34A",
           padding: 15,
           borderRadius: 10,
         }}
@@ -279,7 +314,7 @@ export default function EnviarFoto() {
         <Text
           style={{ color: "white", textAlign: "center", fontWeight: "bold" }}
         >
-          Enviar
+          {enviando ? "Enviando..." : "Enviar"}
         </Text>
       </TouchableOpacity>
 

@@ -8,7 +8,7 @@ import {
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyD2W1GHiner13wuQseT94X1o1GS9F73Xx4",
   authDomain: "promotor-fotos.firebaseapp.com",
   projectId: "promotor-fotos",

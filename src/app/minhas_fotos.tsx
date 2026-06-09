@@ -11,12 +11,17 @@ type Foto = {
   lojaNome: string;
   promotorEmail: string;
   observacao: string;
-  imagemBase64: string;
+  imagemBase64?: string;
+  imagemUrl?: string;
   categoria?: string;
   status?: string;
   comentarioAdmin?: string;
   criadoEm: any;
 };
+
+function obterImagemUri(foto: Foto) {
+  return foto.imagemUrl || foto.imagemBase64 || "";
+}
 
 function obterCategoria(foto: Foto) {
   return foto.categoria || "Sem categoria";
@@ -197,7 +202,7 @@ export default function MinhasFotos() {
 
             <Image
               source={{
-                uri: item.imagemBase64,
+                uri: obterImagemUri(item),
               }}
               style={{
                 width: "100%",

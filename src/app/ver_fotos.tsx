@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import ImageViewer from "react-native-image-zoom-viewer";
+import { router } from "expo-router";
 
 import {
   collection,
@@ -32,7 +33,9 @@ type Foto = {
   lojaNome: string;
   promotorEmail: string;
   observacao: string;
-  imagemBase64: string;
+  imagemBase64?: string;
+  imagemUrl?: string;
+  storagePath?: string;
   categoria?: string;
   status?: string;
   comentarioAdmin?: string;
@@ -54,6 +57,22 @@ const categoriasFoto = [
 
 const statusFotos = ["Todos", "pendente", "aprovada", "refazer", "rejeitada"];
 
+function obterData(valor: any) {
+  if (!valor) return null;
+  if (valor instanceof Date) return valor;
+  if (typeof valor.toDate === "function") return valor.toDate();
+  if (typeof valor === "string" || typeof valor === "number") {
+    const data = new Date(valor);
+    return Number.isNaN(data.getTime()) ? null : data;
+  }
+
+  return null;
+}
+
+function obterImagemUri(foto: Foto) {
+  return foto.imagemUrl || foto.imagemBase64 || "";
+}
+
 export default function VerFotos() {
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [lojaFiltro, setLojaFiltro] = useState("Todas");
@@ -72,20 +91,27 @@ export default function VerFotos() {
   useEffect(() => {
     const q = query(collection(db, "fotos"), orderBy("criadoEm", "desc"));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const lista = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Foto[];
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const lista = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Foto[];
 
-      setFotos(lista);
-    });
+        setFotos(lista);
+      },
+      (error) => {
+        console.log(error);
+        Alert.alert("Erro", "Nao foi possivel carregar as fotos.");
+      },
+    );
 
     return () => unsubscribe();
   }, []);
 
   function formatarData(dataFirebase: any) {
-    const data = dataFirebase?.toDate?.();
+    const data = obterData(dataFirebase);
 
     if (!data) return "Data não disponível";
 
@@ -93,7 +119,7 @@ export default function VerFotos() {
   }
 
   function ehHoje(dataFirebase: any) {
-    const data = dataFirebase?.toDate?.();
+    const data = obterData(dataFirebase);
 
     if (!data) return false;
 
@@ -138,6 +164,15 @@ export default function VerFotos() {
     setMenuAberto(false);
   }
 
+  function voltarTelaAnterior() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/");
+  }
+
   async function excluirFoto(id: string) {
     try {
       await deleteDoc(doc(db, "fotos", id));
@@ -156,7 +191,26 @@ export default function VerFotos() {
       setSalvandoFoto(true);
       setMenuAberto(false);
 
-      const dadosImagem = fotoSelecionada.imagemBase64.match(
+      const imagemUri = obterImagemUri(fotoSelecionada);
+
+      if (!imagemUri) {
+        Alert.alert("Erro", "Esta foto nao possui imagem para baixar.");
+        return;
+      }
+
+      if (!imagemUri.startsWith("data:")) {
+        const nomeArquivo = `foto-${fotoSelecionada.id}.jpg`;
+        const uriArquivo = `${FileSystem.cacheDirectory}${nomeArquivo}`;
+
+        const resultado = await FileSystem.downloadAsync(imagemUri, uriArquivo);
+
+        await MediaLibrary.saveToLibraryAsync(resultado.uri);
+
+        Alert.alert("Sucesso", "Foto baixada na galeria.");
+        return;
+      }
+
+      const dadosImagem = imagemUri.match(
         /^data:(image\/([a-zA-Z0-9.+-]+));base64,(.*)$/,
       );
 
@@ -318,6 +372,20 @@ export default function VerFotos() {
         }}
         ListHeaderComponent={
           <View>
+            <TouchableOpacity
+              onPress={voltarTelaAnterior}
+              style={{
+                alignSelf: "flex-start",
+                backgroundColor: "#1E1E1E",
+                borderRadius: 20,
+                paddingVertical: 8,
+                paddingHorizontal: 14,
+                marginBottom: 18,
+              }}
+            >
+              <Text style={{ color: "white", fontWeight: "bold" }}>Voltar</Text>
+            </TouchableOpacity>
+
             <Text
               style={{
                 color: "white",
@@ -586,8 +654,8 @@ export default function VerFotos() {
             </View>
 
             <TouchableOpacity onPress={() => abrirFoto(item)}>
-              <Image
-                source={{ uri: item.imagemBase64 }}
+                <Image
+                source={{ uri: obterImagemUri(item) }}
                 style={{
                   width: "100%",
                   height: 280,
@@ -721,7 +789,7 @@ export default function VerFotos() {
 
           {fotoSelecionada && (
             <ImageViewer
-              imageUrls={[{ url: fotoSelecionada.imagemBase64 }]}
+              imageUrls={[{ url: obterImagemUri(fotoSelecionada) }]}
               backgroundColor="rgba(0,0,0,0)"
               enableImageZoom
               enableSwipeDown
