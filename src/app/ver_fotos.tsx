@@ -11,9 +11,12 @@ import {
   View,
 } from "react-native";
 
-import ImageViewer from "react-native-image-zoom-viewer";
+import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import ImageViewer from "react-native-image-zoom-viewer";
 
+import * as FileSystem from "expo-file-system/legacy";
+import * as MediaLibrary from "expo-media-library";
 import {
   collection,
   deleteDoc,
@@ -23,8 +26,6 @@ import {
   query,
   updateDoc,
 } from "firebase/firestore";
-import * as FileSystem from "expo-file-system/legacy";
-import * as MediaLibrary from "expo-media-library";
 
 import { db } from "../services/firebaseConfig";
 
@@ -45,6 +46,7 @@ type Foto = {
 const categoriasFoto = [
   "Todas",
   "Gondola",
+  "Relatório de estoque",
   "Ponta",
   "Ilha",
   "Ruptura",
@@ -87,6 +89,9 @@ export default function VerFotos() {
   const [modalComentarioAberto, setModalComentarioAberto] = useState(false);
   const [statusComComentario, setStatusComComentario] = useState("");
   const [comentarioAdmin, setComentarioAdmin] = useState("");
+  const [confirmacaoExclusaoAberta, setConfirmacaoExclusaoAberta] =
+    useState(false);
+  const [excluindoFoto, setExcluindoFoto] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "fotos"), orderBy("criadoEm", "desc"));
@@ -162,6 +167,10 @@ export default function VerFotos() {
   function fecharFoto() {
     setFotoSelecionada(null);
     setMenuAberto(false);
+    setModalComentarioAberto(false);
+    setConfirmacaoExclusaoAberta(false);
+    setStatusComComentario("");
+    setComentarioAdmin("");
   }
 
   function voltarTelaAnterior() {
@@ -173,14 +182,26 @@ export default function VerFotos() {
     router.replace("/");
   }
 
-  async function excluirFoto(id: string) {
+  async function excluirFoto() {
+    if (!fotoSelecionada || excluindoFoto) return;
+
+    const id = fotoSelecionada.id;
+
     try {
+      setExcluindoFoto(true);
       await deleteDoc(doc(db, "fotos", id));
-      Alert.alert("Sucesso", "Foto excluída com sucesso.");
+
+      setFotos((listaAtual) => listaAtual.filter((foto) => foto.id !== id));
       fecharFoto();
+      Alert.alert("Sucesso", "Foto excluida com sucesso.");
     } catch (error: any) {
       console.log(error);
-      Alert.alert("Erro", error.message);
+      Alert.alert(
+        "Erro ao excluir",
+        error.message || "Nao foi possivel excluir a foto.",
+      );
+    } finally {
+      setExcluindoFoto(false);
     }
   }
 
@@ -261,7 +282,10 @@ export default function VerFotos() {
       Alert.alert("Sucesso", `Foto marcada como ${textoStatus(status)}.`);
     } catch (error: any) {
       console.log(error);
-      Alert.alert("Erro", error.message || "Nao foi possivel atualizar a foto.");
+      Alert.alert(
+        "Erro",
+        error.message || "Nao foi possivel atualizar a foto.",
+      );
     }
   }
 
@@ -285,11 +309,6 @@ export default function VerFotos() {
 
     const comentario = comentarioAdmin.trim();
 
-    if (!comentario) {
-      Alert.alert("Atencao", "Informe o motivo para o promotor.");
-      return;
-    }
-
     try {
       await updateDoc(doc(db, "fotos", fotoSelecionada.id), {
         status: statusComComentario,
@@ -309,28 +328,18 @@ export default function VerFotos() {
       );
     } catch (error: any) {
       console.log(error);
-      Alert.alert("Erro", error.message || "Nao foi possivel atualizar a foto.");
+      Alert.alert(
+        "Erro",
+        error.message || "Nao foi possivel atualizar a foto.",
+      );
     }
   }
 
   function confirmarExcluirFoto() {
     if (!fotoSelecionada) return;
 
-    Alert.alert(
-      "Excluir foto",
-      "Tem certeza que deseja excluir esta foto? Essa ação não pode ser desfeita.",
-      [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: () => excluirFoto(fotoSelecionada.id),
-        },
-      ],
-    );
+    setMenuAberto(false);
+    setConfirmacaoExclusaoAberta(true);
   }
 
   const lojasUnicas = ["Todas", ...new Set(fotos.map((foto) => foto.lojaNome))];
@@ -654,7 +663,7 @@ export default function VerFotos() {
             </View>
 
             <TouchableOpacity onPress={() => abrirFoto(item)}>
-                <Image
+              <Image
                 source={{ uri: obterImagemUri(item) }}
                 style={{
                   width: "100%",
@@ -711,19 +720,37 @@ export default function VerFotos() {
               <Text style={{ color: "white", fontSize: 32 }}>×</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => setMenuAberto(!menuAberto)}
-              style={{
-                backgroundColor: "#1E1E1E",
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ color: "white", fontSize: 26 }}>⋮</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity
+                onPress={confirmarExcluirFoto}
+                accessibilityLabel="Excluir foto"
+                style={{
+                  backgroundColor: "rgba(127,29,29,0.9)",
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <MaterialIcons name="delete-outline" size={25} color="white" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setMenuAberto(!menuAberto)}
+                accessibilityLabel="Opcoes da foto"
+                style={{
+                  backgroundColor: "#1E1E1E",
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ color: "white", fontSize: 26 }}>⋮</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {menuAberto && (
@@ -776,14 +803,6 @@ export default function VerFotos() {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={confirmarExcluirFoto}
-                style={{ padding: 12 }}
-              >
-                <Text style={{ color: "#EF4444", fontWeight: "bold" }}>
-                  Excluir foto
-                </Text>
-              </TouchableOpacity>
             </View>
           )}
 
@@ -843,105 +862,192 @@ export default function VerFotos() {
               ) : null}
             </View>
           )}
-        </View>
-      </Modal>
 
-      <Modal
-        visible={modalComentarioAberto}
-        transparent
-        animationType="fade"
-        onRequestClose={cancelarComentarioStatus}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.75)",
-            justifyContent: "center",
-            padding: 20,
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: "#1E1E1E",
-              borderRadius: 12,
-              padding: 18,
-            }}
-          >
-            <Text
+          {modalComentarioAberto && (
+            <View
               style={{
-                color: "white",
-                fontSize: 20,
-                fontWeight: "bold",
-                marginBottom: 8,
+                position: "absolute",
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                zIndex: 100,
+                backgroundColor: "rgba(0,0,0,0.8)",
+                justifyContent: "center",
+                padding: 20,
               }}
             >
-              Motivo para {textoStatus(statusComComentario)}
-            </Text>
-
-            <Text style={{ color: "#aaa", marginBottom: 12 }}>
-              Esse comentario sera exibido para o promotor.
-            </Text>
-
-            <TextInput
-              value={comentarioAdmin}
-              onChangeText={setComentarioAdmin}
-              placeholder="Ex: Foto sem preco visivel"
-              placeholderTextColor="#777"
-              multiline
-              textAlignVertical="top"
-              style={{
-                minHeight: 110,
-                borderWidth: 1,
-                borderColor: "#444",
-                borderRadius: 10,
-                padding: 12,
-                color: "white",
-                marginBottom: 14,
-              }}
-            />
-
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <TouchableOpacity
-                onPress={cancelarComentarioStatus}
+              <View
                 style={{
-                  flex: 1,
-                  backgroundColor: "#444",
-                  padding: 14,
-                  borderRadius: 10,
+                  backgroundColor: "#1E1E1E",
+                  borderRadius: 12,
+                  padding: 18,
                 }}
               >
                 <Text
                   style={{
                     color: "white",
-                    textAlign: "center",
+                    fontSize: 20,
                     fontWeight: "bold",
+                    marginBottom: 8,
                   }}
                 >
-                  Cancelar
+                  Motivo para {textoStatus(statusComComentario)}
                 </Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={salvarComentarioStatus}
-                style={{
-                  flex: 1,
-                  backgroundColor: "#2563EB",
-                  padding: 14,
-                  borderRadius: 10,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "white",
-                    textAlign: "center",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Salvar
+                <Text style={{ color: "#aaa", marginBottom: 12 }}>
+                  Esse comentario sera exibido para o promotor.
                 </Text>
-              </TouchableOpacity>
+
+                <TextInput
+                  value={comentarioAdmin}
+                  onChangeText={setComentarioAdmin}
+                  placeholder="Ex: Foto sem preco visivel"
+                  placeholderTextColor="#777"
+                  multiline
+                  textAlignVertical="top"
+                  autoFocus
+                  style={{
+                    minHeight: 110,
+                    borderWidth: 1,
+                    borderColor: "#444",
+                    borderRadius: 10,
+                    padding: 12,
+                    color: "white",
+                    marginBottom: 14,
+                  }}
+                />
+
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={cancelarComentarioStatus}
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#444",
+                      padding: 14,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Cancelar
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={salvarComentarioStatus}
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#2563EB",
+                      padding: 14,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Salvar
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
+          )}
+
+          {confirmacaoExclusaoAberta && (
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                zIndex: 100,
+                backgroundColor: "rgba(0,0,0,0.8)",
+                justifyContent: "center",
+                padding: 20,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#1E1E1E",
+                  borderRadius: 12,
+                  padding: 18,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    fontSize: 20,
+                    fontWeight: "bold",
+                    marginBottom: 8,
+                  }}
+                >
+                  Excluir foto
+                </Text>
+
+                <Text
+                  style={{ color: "#aaa", lineHeight: 20, marginBottom: 16 }}
+                >
+                  Tem certeza que deseja excluir esta foto? Essa acao nao pode
+                  ser desfeita.
+                </Text>
+
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => setConfirmacaoExclusaoAberta(false)}
+                    disabled={excluindoFoto}
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#444",
+                      padding: 14,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Cancelar
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={excluirFoto}
+                    disabled={excluindoFoto}
+                    style={{
+                      flex: 1,
+                      backgroundColor: excluindoFoto ? "#7F1D1D" : "#DC2626",
+                      padding: 14,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {excluindoFoto ? "Excluindo..." : "Excluir"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
       </Modal>
     </View>

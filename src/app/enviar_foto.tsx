@@ -18,6 +18,7 @@ import { auth, db } from "../services/firebaseConfig";
 
 const categoriasFoto = [
   "Gondola",
+  "Relatório de estoque",
   "Ponta",
   "Ilha",
   "Ruptura",
