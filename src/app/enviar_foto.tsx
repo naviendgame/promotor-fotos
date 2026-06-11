@@ -12,6 +12,7 @@ import {
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
+import { signOut } from "firebase/auth";
 
 import {
   addDoc,
@@ -62,7 +63,9 @@ async function prepararImagemBase64(uri: string) {
     }
   }
 
-  throw new Error("A foto ainda ficou muito grande. Tente tirar a foto mais longe ou com menos detalhes.");
+  throw new Error(
+    "A foto ainda ficou muito grande. Tente tirar a foto mais longe ou com menos detalhes.",
+  );
 }
 
 export default function EnviarFoto() {
@@ -129,8 +132,21 @@ export default function EnviarFoto() {
 
       const imagemBase64 = await prepararImagemBase64(imagem);
       const usuarioSnap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
+
+      if (!usuarioSnap.exists() || usuarioSnap.data().ativo === false) {
+        await signOut(auth);
+        Alert.alert(
+          "Acesso removido",
+          "Seu cadastro nao esta mais ativo no sistema.",
+        );
+        router.replace("/");
+        return;
+      }
+
       const promotorNome =
-        usuarioSnap.data()?.nome || usuarioAtual.displayName || usuarioAtual.email;
+        usuarioSnap.data()?.nome ||
+        usuarioAtual.displayName ||
+        usuarioAtual.email;
 
       await addDoc(collection(db, "fotos"), {
         lojaId,

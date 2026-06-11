@@ -34,7 +34,10 @@ export default function CadastroAdmin() {
       const usuarioSnap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
 
       if (usuarioSnap.data()?.tipo !== "super_admin") {
-        Alert.alert("Acesso negado", "Somente o administrador principal pode cadastrar admins.");
+        Alert.alert(
+          "Acesso negado",
+          "Somente o administrador principal pode cadastrar admins.",
+        );
         router.replace("/admin");
         return;
       }
@@ -58,7 +61,10 @@ export default function CadastroAdmin() {
     }
 
     if (senha.length < 6) {
-      Alert.alert("Atencao", "A senha provisoria deve ter pelo menos 6 caracteres.");
+      Alert.alert(
+        "Atencao",
+        "A senha provisoria deve ter pelo menos 6 caracteres.",
+      );
       return;
     }
 
@@ -93,7 +99,12 @@ export default function CadastroAdmin() {
     <ScrollView
       style={{ flex: 1, backgroundColor: "#121212" }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 30, gap: 14 }}
+      contentContainerStyle={{
+        padding: 20,
+        paddingTop: 60,
+        paddingBottom: 30,
+        gap: 14,
+      }}
       keyboardShouldPersistTaps="handled"
     >
       <Pressable

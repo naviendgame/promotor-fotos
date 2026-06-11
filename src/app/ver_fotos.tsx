@@ -408,8 +408,7 @@ export default function VerFotos() {
     const filtroLojaOk = lojaFiltro === "Todas" || foto.lojaNome === lojaFiltro;
 
     const filtroPromotorOk =
-      promotorFiltro === "Todos" ||
-      obterChavePromotor(foto) === promotorFiltro;
+      promotorFiltro === "Todos" || obterChavePromotor(foto) === promotorFiltro;
 
     const filtroDataOk = !filtroHoje || ehHoje(foto.criadoEm);
     const filtroCategoriaOk =
@@ -865,7 +864,6 @@ export default function VerFotos() {
                   Rejeitar
                 </Text>
               </TouchableOpacity>
-
             </View>
           )}
 

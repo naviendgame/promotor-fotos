@@ -151,13 +151,38 @@ export default function Admin() {
         gap: 10,
       }}
     >
-      <View style={{ gap: 4, paddingBottom: 16 }}>
-        <Text style={{ color: "white", fontSize: 28, fontWeight: "bold" }}>
-          Dashboard Admin
-        </Text>
-        {tipoUsuario === "super_admin" ? (
-          <Text style={{ color: "#FBBF24" }}>Administrador principal</Text>
-        ) : null}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          paddingBottom: 16,
+        }}
+      >
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={{ color: "white", fontSize: 28, fontWeight: "bold" }}>
+            Dashboard Admin
+          </Text>
+          {tipoUsuario === "super_admin" ? (
+            <Text style={{ color: "#FBBF24" }}>Administrador principal</Text>
+          ) : null}
+        </View>
+
+        <Pressable
+          onPress={() => router.push("/perfil_admin" as any)}
+          accessibilityLabel="Abrir perfil"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 8,
+            backgroundColor: "#242424",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <MaterialIcons name="account-circle" size={34} color="#60A5FA" />
+        </Pressable>
       </View>
 
       <View
@@ -264,12 +289,7 @@ export default function Admin() {
         </>
       ) : null}
 
-      <BotaoPainel
-        titulo="Sair"
-        icone="logout"
-        cor="#B91C1C"
-        onPress={sair}
-      />
+      <BotaoPainel titulo="Sair" icone="logout" cor="#B91C1C" onPress={sair} />
     </ScrollView>
   );
 }

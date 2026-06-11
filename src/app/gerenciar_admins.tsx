@@ -50,7 +50,10 @@ export default function GerenciarAdmins() {
       const usuarioSnap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
 
       if (usuarioSnap.data()?.tipo !== "super_admin") {
-        Alert.alert("Acesso negado", "Somente o administrador principal pode gerenciar admins.");
+        Alert.alert(
+          "Acesso negado",
+          "Somente o administrador principal pode gerenciar admins.",
+        );
         router.replace("/admin");
         return;
       }
@@ -65,11 +68,10 @@ export default function GerenciarAdmins() {
       unsubscribe = onSnapshot(
         consulta,
         (snapshot) => {
-          const lista = snapshot.docs
-            .map((item) => ({
-              id: item.id,
-              ...item.data(),
-            })) as Administrador[];
+          const lista = snapshot.docs.map((item) => ({
+            id: item.id,
+            ...item.data(),
+          })) as Administrador[];
 
           lista.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
           setAdmins(lista);
@@ -104,7 +106,10 @@ export default function GerenciarAdmins() {
 
   function alterarAcesso(admin: Administrador) {
     if (admin.id === auth.currentUser?.uid) {
-      Alert.alert("Acao bloqueada", "Voce nao pode desativar o proprio acesso.");
+      Alert.alert(
+        "Acao bloqueada",
+        "Voce nao pode desativar o proprio acesso.",
+      );
       return;
     }
 
@@ -147,7 +152,11 @@ export default function GerenciarAdmins() {
         data={adminsFiltrados}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 30 }}
+        contentContainerStyle={{
+          padding: 20,
+          paddingTop: 60,
+          paddingBottom: 30,
+        }}
         ListHeaderComponent={
           <View style={{ gap: 14, paddingBottom: 18 }}>
             <Pressable
@@ -216,7 +225,9 @@ export default function GerenciarAdmins() {
           </View>
         }
         ListEmptyComponent={
-          <Text style={{ color: "#888" }}>Nenhum administrador encontrado.</Text>
+          <Text style={{ color: "#888" }}>
+            Nenhum administrador encontrado.
+          </Text>
         }
         renderItem={({ item }) => {
           const estaAtivo = item.ativo !== false;

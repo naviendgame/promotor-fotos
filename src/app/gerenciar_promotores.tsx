@@ -14,6 +14,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   query,
@@ -46,6 +47,7 @@ export default function GerenciarPromotores() {
   const [promotorEditado, setPromotorEditado] = useState<Promotor | null>(null);
   const [lojasSelecionadas, setLojasSelecionadas] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   useEffect(() => {
     const consulta = query(
@@ -56,11 +58,10 @@ export default function GerenciarPromotores() {
     return onSnapshot(
       consulta,
       (snapshot) => {
-        const lista = snapshot.docs
-          .map((item) => ({
-            id: item.id,
-            ...item.data(),
-          })) as Promotor[];
+        const lista = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        })) as Promotor[];
 
         lista.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
         setPromotores(lista);
@@ -171,6 +172,38 @@ export default function GerenciarPromotores() {
     );
   }
 
+  function excluirPromotor(promotor: Promotor) {
+    Alert.alert(
+      "Excluir cadastro",
+      `Deseja excluir permanentemente o cadastro de ${promotor.nome}? As fotos enviadas por esse promotor serao preservadas.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir permanentemente",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setExcluindoId(promotor.id);
+              await deleteDoc(doc(db, "usuarios", promotor.id));
+              Alert.alert(
+                "Cadastro removido",
+                `O acesso ao aplicativo foi removido e as fotos foram preservadas.\n\nPara concluir a exclusao da credencial, remova manualmente no Firebase Authentication:\n${promotor.email}`,
+              );
+            } catch (error: any) {
+              console.log(error);
+              Alert.alert(
+                "Erro",
+                error.message || "Nao foi possivel excluir o cadastro.",
+              );
+            } finally {
+              setExcluindoId(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   function nomesLojas(promotor: Promotor) {
     const nomes = lojas
       .filter((loja) => promotor.lojasIds?.includes(loja.id))
@@ -185,7 +218,11 @@ export default function GerenciarPromotores() {
         data={promotoresFiltrados}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: 20, paddingTop: 60, paddingBottom: 30 }}
+        contentContainerStyle={{
+          padding: 20,
+          paddingTop: 60,
+          paddingBottom: 30,
+        }}
         ListHeaderComponent={
           <View style={{ gap: 14, paddingBottom: 18 }}>
             <Pressable
@@ -309,6 +346,30 @@ export default function GerenciarPromotores() {
                   </Text>
                 </Pressable>
               </View>
+
+              <Pressable
+                onPress={() => excluirPromotor(item)}
+                disabled={excluindoId === item.id}
+                style={{
+                  minHeight: 42,
+                  borderWidth: 1,
+                  borderColor: "#DC2626",
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  opacity: excluindoId === item.id ? 0.6 : 1,
+                }}
+              >
+                <MaterialIcons name="delete-outline" size={21} color="#F87171" />
+                <Text style={{ color: "#F87171", fontWeight: "bold" }}>
+                  {excluindoId === item.id
+                    ? "Excluindo..."
+                    : "Excluir cadastro"}
+                </Text>
+              </Pressable>
             </View>
           );
         }}
@@ -361,9 +422,7 @@ export default function GerenciarPromotores() {
                     >
                       <MaterialIcons
                         name={
-                          selecionada
-                            ? "check-box"
-                            : "check-box-outline-blank"
+                          selecionada ? "check-box" : "check-box-outline-blank"
                         }
                         size={22}
                         color="white"

@@ -3,6 +3,7 @@ import { Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
 
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../services/firebaseConfig";
 
@@ -31,11 +32,20 @@ export default function Promotor() {
       const usuarioSnap = await getDoc(usuarioRef);
 
       if (!usuarioSnap.exists()) {
+        await signOut(auth);
         Alert.alert("Erro", "Usuário não cadastrado no sistema.");
+        router.replace("/" as any);
         return;
       }
 
       const usuarioData = usuarioSnap.data();
+
+      if (usuarioData.ativo === false) {
+        await signOut(auth);
+        Alert.alert("Acesso removido", "Seu acesso nao esta mais ativo.");
+        router.replace("/" as any);
+        return;
+      }
 
       setNome(usuarioData.nome || "");
 
@@ -104,11 +114,7 @@ export default function Promotor() {
             justifyContent: "center",
           }}
         >
-          <TouchableOpacity
-            onPress={() => router.push("/perfil_promotor" as any)}
-          >
-            <MaterialIcons name="account-circle" size={38} color="#60A5FA" />
-          </TouchableOpacity>
+          <MaterialIcons name="account-circle" size={38} color="#60A5FA" />
         </TouchableOpacity>
       </View>
 
@@ -221,7 +227,10 @@ export default function Promotor() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => router.replace("/" as any)}
+        onPress={async () => {
+          await signOut(auth);
+          router.replace("/" as any);
+        }}
         style={{
           backgroundColor: "#444",
           padding: 15,

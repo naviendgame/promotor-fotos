@@ -30,6 +30,7 @@ export default function Home() {
       const usuarioSnap = await getDoc(usuarioRef);
 
       if (!usuarioSnap.exists()) {
+        await signOut(auth);
         Alert.alert(
           "Erro",
           "Usuário autenticado, mas não cadastrado no sistema.",
@@ -55,10 +56,7 @@ export default function Home() {
       ) {
         if (usuario.primeiroAcesso === true) {
           router.replace("/alterar_senha" as any);
-        } else if (
-          usuario.tipo === "admin" ||
-          usuario.tipo === "super_admin"
-        ) {
+        } else if (usuario.tipo === "admin" || usuario.tipo === "super_admin") {
           router.replace("/admin" as any);
         } else {
           router.replace("/promotor" as any);
