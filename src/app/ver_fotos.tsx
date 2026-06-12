@@ -43,6 +43,7 @@ type Foto = {
   status?: string;
   comentarioAdmin?: string;
   criadoEm: any;
+  naLixeira?: boolean;
 };
 
 const categoriasFoto = [
@@ -109,7 +110,7 @@ export default function VerFotos() {
           ...doc.data(),
         })) as Foto[];
 
-        setFotos(lista);
+        setFotos(lista.filter((foto) => foto.naLixeira !== true));
       },
       (error) => {
         console.log(error);

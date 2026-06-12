@@ -37,6 +37,7 @@ type Foto = {
   status?: string;
   comentarioAdmin?: string;
   criadoEm?: any;
+  naLixeira?: boolean;
 };
 
 const statusOpcoes = ["Todos", "pendente", "aprovada", "refazer", "rejeitada"];
@@ -85,12 +86,12 @@ export default function FotosWeb() {
     return onSnapshot(
       consulta,
       (snapshot) => {
-        setFotos(
-          snapshot.docs.map((item) => ({
-            id: item.id,
-            ...item.data(),
-          })) as Foto[],
-        );
+        const lista = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        })) as Foto[];
+
+        setFotos(lista.filter((foto) => foto.naLixeira !== true));
       },
       (error) => {
         console.log(error);

@@ -12,6 +12,7 @@ type Foto = {
   lojaNome?: string;
   promotorNome?: string;
   promotorEmail?: string;
+  naLixeira?: boolean;
 };
 
 type LinhaResumoProps = {
@@ -63,12 +64,12 @@ export default function RelatoriosPainel() {
 
   useEffect(() => {
     return onSnapshot(collection(db, "fotos"), (snapshot) => {
-      setFotos(
-        snapshot.docs.map((item) => ({
-          id: item.id,
-          ...item.data(),
-        })) as Foto[],
-      );
+      const lista = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      })) as Foto[];
+
+      setFotos(lista.filter((foto) => foto.naLixeira !== true));
     });
   }, []);
 
@@ -92,7 +93,9 @@ export default function RelatoriosPainel() {
       lojas: contar((foto) => foto.lojaNome || "Loja nao informada"),
       promotores: contar(
         (foto) =>
-          foto.promotorNome || foto.promotorEmail || "Promotor nao identificado",
+          foto.promotorNome ||
+          foto.promotorEmail ||
+          "Promotor nao identificado",
       ),
     };
   }, [fotos]);
@@ -155,7 +158,9 @@ export default function RelatoriosPainel() {
                 />
               ))}
               {grupo.dados.length === 0 ? (
-                <Text style={{ color: "#7A879D" }}>Nenhum dado disponivel.</Text>
+                <Text style={{ color: "#7A879D" }}>
+                  Nenhum dado disponivel.
+                </Text>
               ) : null}
             </View>
           </View>

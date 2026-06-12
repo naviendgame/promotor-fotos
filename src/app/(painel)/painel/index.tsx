@@ -21,6 +21,7 @@ type Foto = {
   status?: string;
   categoria?: string;
   criadoEm?: any;
+  naLixeira?: boolean;
 };
 
 type IndicadorProps = {
@@ -106,7 +107,7 @@ export default function PainelDashboard() {
         const dataB = obterData(b.criadoEm)?.getTime() || 0;
         return dataB - dataA;
       });
-      setFotos(lista);
+      setFotos(lista.filter((foto) => foto.naLixeira !== true));
     });
 
     const unsubscribeLojas = onSnapshot(collection(db, "lojas"), (snapshot) => {
@@ -147,8 +148,9 @@ export default function PainelDashboard() {
 
     return {
       fotosHoje,
-      pendentes: fotos.filter((foto) => (foto.status || "pendente") === "pendente")
-        .length,
+      pendentes: fotos.filter(
+        (foto) => (foto.status || "pendente") === "pendente",
+      ).length,
       aprovadas: fotos.filter((foto) => foto.status === "aprovada").length,
       refazer: fotos.filter((foto) => foto.status === "refazer").length,
       rejeitadas: fotos.filter((foto) => foto.status === "rejeitada").length,
@@ -357,7 +359,9 @@ export default function PainelDashboard() {
           }}
         >
           <View>
-            <Text style={{ color: "#172033", fontSize: 17, fontWeight: "bold" }}>
+            <Text
+              style={{ color: "#172033", fontSize: 17, fontWeight: "bold" }}
+            >
               Envios recentes
             </Text>
             <Text style={{ color: "#7A879D", fontSize: 13, paddingTop: 3 }}>
@@ -365,7 +369,9 @@ export default function PainelDashboard() {
             </Text>
           </View>
           <Pressable onPress={() => router.push("/painel/fotos" as any)}>
-            <Text style={{ color: "#2F6FED", fontWeight: "bold" }}>Ver todas</Text>
+            <Text style={{ color: "#2F6FED", fontWeight: "bold" }}>
+              Ver todas
+            </Text>
           </Pressable>
         </View>
 
@@ -380,7 +386,8 @@ export default function PainelDashboard() {
                 minHeight: 62,
                 paddingHorizontal: 18,
                 paddingVertical: 12,
-                borderBottomWidth: indice < Math.min(fotos.length, 5) - 1 ? 1 : 0,
+                borderBottomWidth:
+                  indice < Math.min(fotos.length, 5) - 1 ? 1 : 0,
                 borderBottomColor: "#EEF1F5",
                 flexDirection: "row",
                 alignItems: "center",

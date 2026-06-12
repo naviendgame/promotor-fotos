@@ -24,7 +24,9 @@ export default function PerfilPromotor() {
       where("promotorId", "==", usuarioAtual.uid),
     );
     const unsubscribeFotos = onSnapshot(consultaFotos, (snapshot) => {
-      setTotalFotos(snapshot.size);
+      setTotalFotos(
+        snapshot.docs.filter((item) => item.data().naLixeira !== true).length,
+      );
     });
 
     return () => {
