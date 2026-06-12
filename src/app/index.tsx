@@ -57,7 +57,11 @@ export default function Home() {
         if (usuario.primeiroAcesso === true) {
           router.replace("/alterar_senha" as any);
         } else if (usuario.tipo === "admin" || usuario.tipo === "super_admin") {
-          router.replace("/admin" as any);
+          router.replace(
+            process.env.EXPO_OS === "web"
+              ? ("/painel" as any)
+              : ("/admin" as any),
+          );
         } else {
           router.replace("/promotor" as any);
         }

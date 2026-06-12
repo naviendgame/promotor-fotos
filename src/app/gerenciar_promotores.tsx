@@ -363,7 +363,11 @@ export default function GerenciarPromotores() {
                   opacity: excluindoId === item.id ? 0.6 : 1,
                 }}
               >
-                <MaterialIcons name="delete-outline" size={21} color="#F87171" />
+                <MaterialIcons
+                  name="delete-outline"
+                  size={21}
+                  color="#F87171"
+                />
                 <Text style={{ color: "#F87171", fontWeight: "bold" }}>
                   {excluindoId === item.id
                     ? "Excluindo..."

@@ -48,7 +48,9 @@ export default function AlterarSenha() {
 
       router.replace(
         tipo === "admin" || tipo === "super_admin"
-          ? ("/admin" as any)
+          ? process.env.EXPO_OS === "web"
+            ? ("/painel" as any)
+            : ("/admin" as any)
           : ("/promotor" as any),
       );
     } catch (error: any) {
