@@ -11,20 +11,15 @@ import {
 
 import { MaterialIcons } from "@expo/vector-icons";
 import {
-  addDoc,
-  collection,
   onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
 
-import { db } from "../../../services/firebaseConfig";
-
-type Loja = {
-  id: string;
-  nome: string;
-  cidade?: string;
-  estado?: string;
-};
+import {
+  criarLoja,
+  lojasCollection,
+} from "@/services/lojas-service";
+import type { Loja } from "@/types/loja";
 
 export default function LojasWeb() {
   const [lojas, setLojas] = useState<Loja[]>([]);
@@ -36,7 +31,7 @@ export default function LojasWeb() {
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
-    return onSnapshot(collection(db, "lojas"), (snapshot) => {
+    return onSnapshot(lojasCollection(), (snapshot) => {
       const lista = snapshot.docs.map((item) => ({
         id: item.id,
         ...item.data(),
@@ -64,7 +59,7 @@ export default function LojasWeb() {
 
     try {
       setSalvando(true);
-      await addDoc(collection(db, "lojas"), {
+      await criarLoja({
         nome: nome.trim(),
         cidade: cidade.trim(),
         estado: estado.trim().toUpperCase(),

@@ -12,61 +12,28 @@ import {
 } from "react-native";
 
 import { MaterialIcons } from "@expo/vector-icons";
+import { onSnapshot } from "firebase/firestore";
+
+import { STATUS_FOTO_FILTRO_OPCOES } from "@/constants/status-foto";
 import {
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-} from "firebase/firestore";
-
-import { db } from "../../../services/firebaseConfig";
-import { atualizarFotoComNotificacao } from "../../../services/notificacoes";
-
-type Foto = {
-  id: string;
-  lojaNome?: string;
-  promotorId?: string;
-  promotorNome?: string;
-  promotorEmail?: string;
-  observacao?: string;
-  imagemBase64?: string;
-  imagemUrl?: string;
-  categoria?: string;
-  status?: string;
-  comentarioAdmin?: string;
-  criadoEm?: any;
-  naLixeira?: boolean;
-  refacaoDeId?: string;
-  numeroRefacao?: number;
-  motivoRefacao?: string;
-};
+  consultaFotosOrdenadasPorData,
+  excluirFoto as excluirFotoPorId,
+} from "@/services/fotos-service";
+import { atualizarFotoComNotificacao } from "@/services/notificacoes";
+import type { Foto } from "@/types/foto";
+import { obterData } from "@/utils/datas";
+import {
+  filtrarFotosAtuais,
+  obterImagemUri as imagemDaFoto,
+} from "@/utils/fotos";
+import { visualStatusWeb as estiloStatus } from "@/utils/status-foto";
 
 type AcaoAvaliacao = "refazer" | "rejeitada" | null;
 
-const statusOpcoes = ["Todos", "pendente", "aprovada", "refazer", "rejeitada"];
-
-function obterData(valor: any) {
-  if (!valor) return null;
-  if (valor instanceof Date) return valor;
-  if (typeof valor.toDate === "function") return valor.toDate();
-  return null;
-}
-
-function imagemDaFoto(foto: Foto) {
-  return foto.imagemUrl || foto.imagemBase64 || "";
-}
+const statusOpcoes = [...STATUS_FOTO_FILTRO_OPCOES];
 
 function nomePromotor(foto: Foto) {
   return foto.promotorNome || foto.promotorEmail || "Promotor nao identificado";
-}
-
-function estiloStatus(status: string) {
-  if (status === "aprovada") return { fundo: "#E4F4EA", texto: "#247946" };
-  if (status === "refazer") return { fundo: "#FFF1D9", texto: "#A6650B" };
-  if (status === "rejeitada") return { fundo: "#FBE7E9", texto: "#B5323E" };
-  return { fundo: "#E8EFFD", texto: "#2F6FED" };
 }
 
 export default function FotosWeb() {
@@ -86,32 +53,15 @@ export default function FotosWeb() {
   const { width } = useWindowDimensions();
 
   useEffect(() => {
-    const consulta = query(
-      collection(db, "fotos"),
-      orderBy("criadoEm", "desc"),
-    );
-
     return onSnapshot(
-      consulta,
+      consultaFotosOrdenadasPorData(),
       (snapshot) => {
         const lista = snapshot.docs.map((item) => ({
           id: item.id,
           ...item.data(),
         })) as Foto[];
 
-        const idsSubstituidos = new Set(
-          lista
-            .filter((foto) => foto.naLixeira !== true)
-            .map((foto) => foto.refacaoDeId)
-            .filter(Boolean),
-        );
-
-        setFotos(
-          lista.filter(
-            (foto) =>
-              foto.naLixeira !== true && !idsSubstituidos.has(foto.id),
-          ),
-        );
+        setFotos(filtrarFotosAtuais(lista));
       },
       (error) => {
         console.log(error);
@@ -192,7 +142,7 @@ export default function FotosWeb() {
 
     try {
       setExcluindo(true);
-      await deleteDoc(doc(db, "fotos", fotoAberta.id));
+      await excluirFotoPorId(fotoAberta.id);
       setConfirmandoExclusao(false);
       setFotoAberta(null);
     } catch (error: any) {

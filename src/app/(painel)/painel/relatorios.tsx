@@ -1,20 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 
-import { collection, onSnapshot } from "firebase/firestore";
+import { onSnapshot } from "firebase/firestore";
 
-import { db } from "../../../services/firebaseConfig";
-
-type Foto = {
-  id: string;
-  categoria?: string;
-  status?: string;
-  lojaNome?: string;
-  promotorNome?: string;
-  promotorEmail?: string;
-  naLixeira?: boolean;
-  refacaoDeId?: string;
-};
+import { fotosCollection } from "@/services/fotos-service";
+import type { Foto } from "@/types/foto";
+import { filtrarFotosAtuais } from "@/utils/fotos";
 
 type LinhaResumoProps = {
   nome: string;
@@ -64,25 +55,13 @@ export default function RelatoriosPainel() {
   const [fotos, setFotos] = useState<Foto[]>([]);
 
   useEffect(() => {
-    return onSnapshot(collection(db, "fotos"), (snapshot) => {
+    return onSnapshot(fotosCollection(), (snapshot) => {
       const lista = snapshot.docs.map((item) => ({
         id: item.id,
         ...item.data(),
       })) as Foto[];
 
-      const idsSubstituidos = new Set(
-        lista
-          .filter((foto) => foto.naLixeira !== true)
-          .map((foto) => foto.refacaoDeId)
-          .filter(Boolean),
-      );
-
-      setFotos(
-        lista.filter(
-          (foto) =>
-            foto.naLixeira !== true && !idsSubstituidos.has(foto.id),
-        ),
-      );
+      setFotos(filtrarFotosAtuais(lista));
     });
   }, []);
 

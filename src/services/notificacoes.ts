@@ -1,17 +1,15 @@
 import {
-  collection,
   doc,
   serverTimestamp,
   writeBatch,
 } from "firebase/firestore";
 
 import { db } from "./firebaseConfig";
+import { fotoDoc } from "./fotos-service";
+import { notificacoesCollection } from "./notificacoes-service";
+import type { Foto } from "../types/foto";
 
-type FotoNotificavel = {
-  id: string;
-  lojaNome?: string;
-  promotorId?: string;
-};
+type FotoNotificavel = Pick<Foto, "id" | "lojaNome" | "promotorId">;
 
 function dadosNotificacao(status: string, lojaNome: string, comentario: string) {
   if (status === "aprovada") {
@@ -51,9 +49,8 @@ export async function atualizarFotoComNotificacao({
 }) {
   const batch = writeBatch(db);
   const comentarioLimpo = comentario.trim();
-  const fotoRef = doc(db, "fotos", foto.id);
 
-  batch.update(fotoRef, {
+  batch.update(fotoDoc(foto.id), {
     status,
     comentarioAdmin: status === "aprovada" ? "" : comentarioLimpo,
     avaliadaEm: serverTimestamp(),
@@ -65,7 +62,7 @@ export async function atualizarFotoComNotificacao({
       foto.lojaNome || "Loja não informada",
       comentarioLimpo,
     );
-    const notificacaoRef = doc(collection(db, "notificacoes"));
+    const notificacaoRef = doc(notificacoesCollection());
 
     batch.set(notificacaoRef, {
       ...notificacao,

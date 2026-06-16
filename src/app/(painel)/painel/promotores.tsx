@@ -3,19 +3,20 @@ import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 
 import { MaterialIcons } from "@expo/vector-icons";
 import {
-  collection,
-  deleteDoc,
-  doc,
   onSnapshot,
-  query,
   serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
 } from "firebase/firestore";
 
-import { criarUsuarioAuth } from "../../../services/criarUsuarioAuth";
-import { db } from "../../../services/firebaseConfig";
+import { criarUsuarioAuth } from "@/services/criarUsuarioAuth";
+import { lojasCollection } from "@/services/lojas-service";
+import {
+  atualizarUsuario,
+  consultaPromotores,
+  criarUsuario,
+  excluirUsuario,
+} from "@/services/usuarios-service";
+import type { Loja } from "@/types/loja";
+import type { Promotor } from "@/types/usuario";
 import {
   Cabecalho,
   Campo,
@@ -30,20 +31,16 @@ import {
   tabela,
 } from "./lojas";
 
-type Loja = { id: string; nome: string; cidade?: string; estado?: string };
-type Promotor = {
-  id: string;
+type PromotorWebItem = Promotor & {
   nome: string;
   email: string;
-  lojasIds?: string[];
-  ativo?: boolean;
 };
 
 export default function PromotoresWeb() {
-  const [promotores, setPromotores] = useState<Promotor[]>([]);
+  const [promotores, setPromotores] = useState<PromotorWebItem[]>([]);
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [busca, setBusca] = useState("");
-  const [editado, setEditado] = useState<Promotor | null>(null);
+  const [editado, setEditado] = useState<PromotorWebItem | null>(null);
   const [selecionadas, setSelecionadas] = useState<string[]>([]);
   const [novoAberto, setNovoAberto] = useState(false);
   const [nome, setNome] = useState("");
@@ -52,13 +49,12 @@ export default function PromotoresWeb() {
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
-    const consulta = query(collection(db, "usuarios"), where("tipo", "==", "promotor"));
-    const unsubUsuarios = onSnapshot(consulta, (snapshot) => {
-      const lista = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) as Promotor[];
+    const unsubUsuarios = onSnapshot(consultaPromotores(), (snapshot) => {
+      const lista = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) as PromotorWebItem[];
       lista.sort((a, b) => a.nome.localeCompare(b.nome));
       setPromotores(lista);
     });
-    const unsubLojas = onSnapshot(collection(db, "lojas"), (snapshot) => {
+    const unsubLojas = onSnapshot(lojasCollection(), (snapshot) => {
       setLojas(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) as Loja[]);
     });
     return () => { unsubUsuarios(); unsubLojas(); };
@@ -78,7 +74,7 @@ export default function PromotoresWeb() {
     );
   }
 
-  function abrirEdicao(promotor: Promotor) {
+  function abrirEdicao(promotor: PromotorWebItem) {
     setEditado(promotor);
     setSelecionadas(promotor.lojasIds || []);
   }
@@ -90,7 +86,7 @@ export default function PromotoresWeb() {
     }
     setSalvando(true);
     try {
-      await updateDoc(doc(db, "usuarios", editado.id), {
+      await atualizarUsuario(editado.id, {
         lojasIds: selecionadas,
         atualizadoEm: serverTimestamp(),
       });
@@ -108,7 +104,7 @@ export default function PromotoresWeb() {
     setSalvando(true);
     try {
       const uid = await criarUsuarioAuth(email, senha);
-      await setDoc(doc(db, "usuarios", uid), {
+      await criarUsuario(uid, {
         nome: nome.trim(),
         email: email.trim().toLowerCase(),
         tipo: "promotor",
@@ -125,20 +121,20 @@ export default function PromotoresWeb() {
     }
   }
 
-  async function alternarAcesso(item: Promotor) {
-    await updateDoc(doc(db, "usuarios", item.id), {
+  async function alternarAcesso(item: PromotorWebItem) {
+    await atualizarUsuario(item.id, {
       ativo: item.ativo === false,
       atualizadoEm: serverTimestamp(),
     });
   }
 
-  async function excluir(item: Promotor) {
+  async function excluir(item: PromotorWebItem) {
     if (!globalThis.confirm(`Excluir o cadastro de ${item.nome}? As fotos serao preservadas.`)) return;
-    await deleteDoc(doc(db, "usuarios", item.id));
+    await excluirUsuario(item.id);
     globalThis.alert(`Cadastro removido. Exclua tambem a credencial de ${item.email} no Firebase Authentication.`);
   }
 
-  function nomesLojas(item: Promotor) {
+  function nomesLojas(item: PromotorWebItem) {
     return lojas.filter((loja) => item.lojasIds?.includes(loja.id)).map((loja) => loja.nome).join(", ") || "Nenhuma loja";
   }
 

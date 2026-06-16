@@ -67,7 +67,7 @@ export default function PerfilUsuario({
       const usuarioAtual = auth.currentUser;
 
       if (!usuarioAtual) {
-        router.replace("/");
+        router.replace("/(auth)/index");
         return;
       }
 
@@ -75,7 +75,7 @@ export default function PerfilUsuario({
 
       if (!usuarioSnap.exists() || usuarioSnap.data().ativo === false) {
         await signOut(auth);
-        router.replace("/");
+        router.replace("/(auth)/index");
         return;
       }
 
@@ -204,7 +204,7 @@ export default function PerfilUsuario({
 
   async function sair() {
     await signOut(auth);
-    router.replace("/");
+    router.replace("/(auth)/index");
   }
 
   const tituloTipo =

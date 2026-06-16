@@ -1,34 +1,5 @@
-import { initializeApp } from "firebase/app";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  getAuth,
-  getReactNativePersistence,
-  initializeAuth,
-} from "@firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
-
-export const firebaseConfig = {
-  apiKey: "AIzaSyD2W1GHiner13wuQseT94X1o1GS9F73Xx4",
-  authDomain: "promotor-fotos.firebaseapp.com",
-  projectId: "promotor-fotos",
-  storageBucket: "promotor-fotos.firebasestorage.app",
-  messagingSenderId: "820701754599",
-  appId: "1:820701754599:web:ef4c08e991d45c1b19de42",
-};
-
-const app = initializeApp(firebaseConfig);
-
-export const auth = (() => {
-  try {
-    return initializeAuth(app, {
-      persistence: getReactNativePersistence(AsyncStorage),
-    });
-  } catch {
-    return getAuth(app);
-  }
-})();
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-
-export default app;
+export { firebaseConfig, firebaseApp } from "./firebase/app";
+export { auth } from "./firebase/auth";
+export { db } from "./firebase/firestore";
+export { storage } from "./firebase/storage";
+export { default } from "./firebase/app";

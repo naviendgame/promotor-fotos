@@ -3,10 +3,10 @@ import { ActivityIndicator, View } from "react-native";
 
 import { Slot, router } from "expo-router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 
 import PainelWebLayout from "../../../components/painel-web-layout";
-import { auth, db } from "../../../services/firebaseConfig";
+import { auth } from "../../../services/firebaseConfig";
+import { buscarUsuario } from "../../../services/usuarios-service";
 
 type TipoUsuario = "admin" | "super_admin";
 
@@ -18,13 +18,13 @@ export default function PainelLayout() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (usuarioAtual) => {
       if (!usuarioAtual) {
-        router.replace("/");
+        router.replace("/(auth)/index");
         setCarregando(false);
         return;
       }
 
       try {
-        const usuarioSnap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
+        const usuarioSnap = await buscarUsuario(usuarioAtual.uid);
         const dados = usuarioSnap.data();
 
         if (
@@ -33,7 +33,7 @@ export default function PainelLayout() {
           (dados.tipo !== "admin" && dados.tipo !== "super_admin")
         ) {
           await signOut(auth);
-          router.replace("/");
+          router.replace("/(auth)/index");
           return;
         }
 
@@ -41,7 +41,7 @@ export default function PainelLayout() {
         setTipoUsuario(dados.tipo);
       } catch (error) {
         console.log(error);
-        router.replace("/");
+        router.replace("/(auth)/index");
       } finally {
         setCarregando(false);
       }

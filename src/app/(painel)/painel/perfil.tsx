@@ -9,9 +9,13 @@ import {
   updatePassword,
   updateProfile,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
 
-import { auth, db } from "../../../services/firebaseConfig";
+import { auth } from "@/services/firebaseConfig";
+import {
+  atualizarUsuario,
+  buscarUsuario,
+} from "@/services/usuarios-service";
 import { Cabecalho } from "./lojas";
 
 export default function PerfilWeb() {
@@ -29,7 +33,7 @@ export default function PerfilWeb() {
     async function carregar() {
       const atual = auth.currentUser;
       if (!atual) return;
-      const perfil = await getDoc(doc(db, "usuarios", atual.uid));
+      const perfil = await buscarUsuario(atual.uid);
       const dados = perfil.data();
       const emailAtual = atual.email || dados?.email || "";
       setNome(dados?.nome || atual.displayName || "");
@@ -57,7 +61,7 @@ export default function PerfilWeb() {
         await updateEmail(atual, novoEmail);
       }
       await updateProfile(atual, { displayName: nome.trim() });
-      await updateDoc(doc(db, "usuarios", atual.uid), {
+      await atualizarUsuario(atual.uid, {
         nome: nome.trim(), email: novoEmail, atualizadoEm: serverTimestamp(),
       });
       setEmailOriginal(novoEmail);

@@ -52,7 +52,7 @@ export default function PainelWebLayout({
 
   async function sair() {
     await signOut(auth);
-    router.replace("/");
+    router.replace("/(auth)/index");
   }
 
   const menuVisivel = itensMenu.filter(

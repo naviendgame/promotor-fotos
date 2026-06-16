@@ -9,21 +9,17 @@ import {
 
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { collection, onSnapshot } from "firebase/firestore";
+import { onSnapshot } from "firebase/firestore";
 
-import { db } from "../../../services/firebaseConfig";
-
-type Foto = {
-  id: string;
-  lojaNome?: string;
-  promotorNome?: string;
-  promotorEmail?: string;
-  status?: string;
-  categoria?: string;
-  criadoEm?: any;
-  naLixeira?: boolean;
-  refacaoDeId?: string;
-};
+import { fotosCollection } from "@/services/fotos-service";
+import { lojasCollection } from "@/services/lojas-service";
+import { consultaPromotores } from "@/services/usuarios-service";
+import type { Foto } from "@/types/foto";
+import { obterData } from "@/utils/datas";
+import {
+  filtrarFotosAtuais,
+  ordenarFotosRecentes,
+} from "@/utils/fotos";
 
 type IndicadorProps = {
   titulo: string;
@@ -82,14 +78,6 @@ function Indicador({ titulo, valor, icone, cor }: IndicadorProps) {
   );
 }
 
-function obterData(valor: any) {
-  if (!valor) return null;
-  if (valor instanceof Date) return valor;
-  if (typeof valor.toDate === "function") return valor.toDate();
-
-  return null;
-}
-
 export default function PainelDashboard() {
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [totalLojas, setTotalLojas] = useState(0);
@@ -97,43 +85,26 @@ export default function PainelDashboard() {
   const { width } = useWindowDimensions();
 
   useEffect(() => {
-    const unsubscribeFotos = onSnapshot(collection(db, "fotos"), (snapshot) => {
+    const unsubscribeFotos = onSnapshot(fotosCollection(), (snapshot) => {
       const lista = snapshot.docs.map((item) => ({
         id: item.id,
         ...item.data(),
       })) as Foto[];
 
-      lista.sort((a, b) => {
-        const dataA = obterData(a.criadoEm)?.getTime() || 0;
-        const dataB = obterData(b.criadoEm)?.getTime() || 0;
-        return dataB - dataA;
-      });
-      const idsSubstituidos = new Set(
-        lista
-          .filter((foto) => foto.naLixeira !== true)
-          .map((foto) => foto.refacaoDeId)
-          .filter(Boolean),
-      );
-
-      setFotos(
-        lista.filter(
-          (foto) =>
-            foto.naLixeira !== true && !idsSubstituidos.has(foto.id),
-        ),
-      );
+      setFotos(filtrarFotosAtuais(ordenarFotosRecentes(lista)));
     });
 
-    const unsubscribeLojas = onSnapshot(collection(db, "lojas"), (snapshot) => {
+    const unsubscribeLojas = onSnapshot(lojasCollection(), (snapshot) => {
       setTotalLojas(snapshot.size);
     });
 
     const unsubscribeUsuarios = onSnapshot(
-      collection(db, "usuarios"),
+      consultaPromotores(),
       (snapshot) => {
         setTotalPromotores(
           snapshot.docs.filter(
             (item) =>
-              item.data().tipo === "promotor" && item.data().ativo !== false,
+              item.data().ativo !== false,
           ).length,
         );
       },

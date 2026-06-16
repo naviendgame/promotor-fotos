@@ -4,19 +4,19 @@ import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-  collection,
-  doc,
-  getDoc,
   onSnapshot,
-  query,
   serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
 } from "firebase/firestore";
 
-import { criarUsuarioAuth } from "../../../services/criarUsuarioAuth";
-import { auth, db } from "../../../services/firebaseConfig";
+import { criarUsuarioAuth } from "@/services/criarUsuarioAuth";
+import { auth } from "@/services/firebaseConfig";
+import {
+  atualizarUsuario,
+  buscarUsuario,
+  consultaAdministradores,
+  criarUsuario,
+} from "@/services/usuarios-service";
+import type { Administrador } from "@/types/usuario";
 import {
   Cabecalho,
   Campo,
@@ -30,16 +30,14 @@ import {
   tabela,
 } from "./lojas";
 
-type Admin = {
-  id: string;
+type AdminWebItem = Administrador & {
   nome: string;
   email: string;
   tipo: "admin" | "super_admin";
-  ativo?: boolean;
 };
 
 export default function AdministradoresWeb() {
-  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [admins, setAdmins] = useState<AdminWebItem[]>([]);
   const [busca, setBusca] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
   const [nome, setNome] = useState("");
@@ -52,16 +50,15 @@ export default function AdministradoresWeb() {
     let unsubscribe: undefined | (() => void);
     async function iniciar() {
       const atual = auth.currentUser;
-      if (!atual) return router.replace("/");
-      const perfil = await getDoc(doc(db, "usuarios", atual.uid));
+      if (!atual) return router.replace("/(auth)/index");
+      const perfil = await buscarUsuario(atual.uid);
       if (perfil.data()?.tipo !== "super_admin") {
         router.replace("/painel" as any);
         return;
       }
       setAutorizado(true);
-      const consulta = query(collection(db, "usuarios"), where("tipo", "in", ["admin", "super_admin"]));
-      unsubscribe = onSnapshot(consulta, (snapshot) => {
-        const lista = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) as Admin[];
+      unsubscribe = onSnapshot(consultaAdministradores(), (snapshot) => {
+        const lista = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) as AdminWebItem[];
         lista.sort((a, b) => a.nome.localeCompare(b.nome));
         setAdmins(lista);
       });
@@ -84,7 +81,7 @@ export default function AdministradoresWeb() {
     try {
       setSalvando(true);
       const uid = await criarUsuarioAuth(email, senha);
-      await setDoc(doc(db, "usuarios", uid), {
+      await criarUsuario(uid, {
         nome: nome.trim(),
         email: email.trim().toLowerCase(),
         tipo: "admin",
@@ -100,12 +97,12 @@ export default function AdministradoresWeb() {
     }
   }
 
-  async function alternarAcesso(item: Admin) {
+  async function alternarAcesso(item: AdminWebItem) {
     if (item.id === auth.currentUser?.uid) {
       Alert.alert("Acao bloqueada", "Voce nao pode desativar seu proprio acesso.");
       return;
     }
-    await updateDoc(doc(db, "usuarios", item.id), {
+    await atualizarUsuario(item.id, {
       ativo: item.ativo === false,
       atualizadoEm: serverTimestamp(),
     });
