@@ -15,6 +15,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { onSnapshot } from "firebase/firestore";
 import ImageViewer from "react-native-image-zoom-viewer";
 
+import { ROTAS } from "@/constants/routes";
 import { STATUS_FOTO_FILTRO_OPCOES } from "@/constants/status-foto";
 import { auth } from "@/services/firebaseConfig";
 import {
@@ -92,9 +93,8 @@ export default function MinhasFotos() {
   const [lojaFiltro, setLojaFiltro] = useState("Todas");
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
   const [statusFiltro, setStatusFiltro] = useState(
-    statusOpcoes.includes((parametros.statusInicial || "") as any)
-      ? parametros.statusInicial!
-      : "Todos",
+    statusOpcoes.find((status) => status === parametros.statusInicial) ||
+      "Todos",
   );
   const [periodoFiltro, setPeriodoFiltro] = useState<Periodo>("Todas");
   const [fotoSelecionada, setFotoSelecionada] = useState<Foto | null>(null);
@@ -106,7 +106,7 @@ export default function MinhasFotos() {
     const usuarioAtual = auth.currentUser;
 
     if (!usuarioAtual) {
-      router.replace("/" as any);
+      router.replace(ROTAS.login);
       return;
     }
 
@@ -199,7 +199,7 @@ export default function MinhasFotos() {
 
     setFotoSelecionada(null);
     router.push({
-      pathname: "/enviar_foto",
+      pathname: ROTAS.enviarFoto,
       params: {
         lojaId: foto.lojaId,
         lojaNome: foto.lojaNome,
@@ -208,7 +208,7 @@ export default function MinhasFotos() {
         numeroRefacao: (foto.numeroRefacao || 0) + 1,
         motivoRefacao: foto.comentarioAdmin || "",
       },
-    } as any);
+    });
   }
 
   async function moverParaLixeira(foto: Foto) {
@@ -330,7 +330,7 @@ export default function MinhasFotos() {
         titulo="Status"
         opcoes={statusOpcoes}
         valor={statusFiltro}
-        onChange={setStatusFiltro}
+        onChange={(valor) => setStatusFiltro(valor as typeof statusFiltro)}
         formatar={(valor) => (valor === "Todos" ? valor : textoStatus(valor))}
       />
       <GrupoFiltro

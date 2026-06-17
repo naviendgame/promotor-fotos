@@ -7,9 +7,11 @@ import {
 } from "react-native";
 
 import { MaterialIcons } from "@expo/vector-icons";
+import type { Href } from "expo-router";
 import { Link, router, usePathname } from "expo-router";
 import { signOut } from "firebase/auth";
 
+import { ROTAS } from "../constants/routes";
 import { auth } from "../services/firebaseConfig";
 
 type TipoUsuario = "admin" | "super_admin";
@@ -22,20 +24,20 @@ type PainelWebLayoutProps = {
 
 type ItemMenu = {
   titulo: string;
-  href: string;
+  href: Extract<Href, string>;
   icone: keyof typeof MaterialIcons.glyphMap;
   apenasSuperAdmin?: boolean;
 };
 
 const itensMenu: ItemMenu[] = [
-  { titulo: "Dashboard", href: "/painel", icone: "dashboard" },
-  { titulo: "Fotos", href: "/painel/fotos", icone: "photo-library" },
-  { titulo: "Promotores", href: "/painel/promotores", icone: "groups" },
-  { titulo: "Lojas", href: "/painel/lojas", icone: "store" },
-  { titulo: "Relatorios", href: "/painel/relatorios", icone: "assessment" },
+  { titulo: "Dashboard", href: ROTAS.painel, icone: "dashboard" },
+  { titulo: "Fotos", href: ROTAS.painelFotos, icone: "photo-library" },
+  { titulo: "Promotores", href: ROTAS.painelPromotores, icone: "groups" },
+  { titulo: "Lojas", href: ROTAS.painelLojas, icone: "store" },
+  { titulo: "Relatorios", href: ROTAS.painelRelatorios, icone: "assessment" },
   {
     titulo: "Administradores",
-    href: "/painel/administradores",
+    href: ROTAS.painelAdministradores,
     icone: "admin-panel-settings",
     apenasSuperAdmin: true,
   },
@@ -52,7 +54,7 @@ export default function PainelWebLayout({
 
   async function sair() {
     await signOut(auth);
-    router.replace("/(auth)/index");
+    router.replace(ROTAS.login);
   }
 
   const menuVisivel = itensMenu.filter(
@@ -120,7 +122,7 @@ export default function PainelWebLayout({
                 : pathname.startsWith(item.href);
 
             return (
-              <Link key={item.href} href={item.href as any} asChild>
+              <Link key={item.href} href={item.href} asChild>
                 <Pressable
                   accessibilityLabel={item.titulo}
                   style={{
@@ -193,7 +195,7 @@ export default function PainelWebLayout({
             Operacao e acompanhamento
           </Text>
 
-          <Link href={"/painel/perfil" as any} asChild>
+          <Link href={ROTAS.painelPerfil} asChild>
             <Pressable
               accessibilityLabel="Abrir perfil"
               style={{

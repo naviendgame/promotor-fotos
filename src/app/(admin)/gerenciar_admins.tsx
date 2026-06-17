@@ -12,6 +12,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { onSnapshot, serverTimestamp } from "firebase/firestore";
 
+import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import {
   atualizarUsuario,
@@ -38,7 +39,7 @@ export default function GerenciarAdmins() {
       const usuarioAtual = auth.currentUser;
 
       if (!usuarioAtual) {
-        router.replace("/(auth)/index");
+        router.replace(ROTAS.login);
         return;
       }
 
@@ -49,7 +50,7 @@ export default function GerenciarAdmins() {
           "Acesso negado",
           "Somente o administrador principal pode gerenciar admins.",
         );
-        router.replace("/admin");
+        router.replace(ROTAS.admin);
         return;
       }
 
@@ -76,7 +77,7 @@ export default function GerenciarAdmins() {
     iniciar().catch((error) => {
       console.log(error);
       Alert.alert("Erro", "Nao foi possivel validar seu acesso.");
-      router.replace("/admin");
+      router.replace(ROTAS.admin);
     });
 
     return () => unsubscribe?.();
@@ -183,7 +184,7 @@ export default function GerenciarAdmins() {
                 Administradores
               </Text>
               <Pressable
-                onPress={() => router.push("/cadastro_admin" as any)}
+                onPress={() => router.push(ROTAS.cadastroAdmin)}
                 accessibilityLabel="Cadastrar administrador"
                 style={{
                   width: 44,

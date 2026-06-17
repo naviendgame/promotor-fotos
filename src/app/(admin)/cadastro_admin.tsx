@@ -12,6 +12,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { serverTimestamp } from "firebase/firestore";
 
+import { ROTAS } from "@/constants/routes";
 import { criarUsuarioAuth } from "@/services/criarUsuarioAuth";
 import { auth } from "@/services/firebaseConfig";
 import {
@@ -31,7 +32,7 @@ export default function CadastroAdmin() {
       const usuarioAtual = auth.currentUser;
 
       if (!usuarioAtual) {
-        router.replace("/(auth)/index");
+        router.replace(ROTAS.login);
         return;
       }
 
@@ -42,7 +43,7 @@ export default function CadastroAdmin() {
           "Acesso negado",
           "Somente o administrador principal pode cadastrar admins.",
         );
-        router.replace("/admin");
+        router.replace(ROTAS.admin);
         return;
       }
 
@@ -52,7 +53,7 @@ export default function CadastroAdmin() {
     validarAcesso().catch((error) => {
       console.log(error);
       Alert.alert("Erro", "Nao foi possivel validar seu acesso.");
-      router.replace("/admin");
+      router.replace(ROTAS.admin);
     });
   }, []);
 

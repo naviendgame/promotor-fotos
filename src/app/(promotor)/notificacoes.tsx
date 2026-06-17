@@ -5,6 +5,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { onSnapshot } from "firebase/firestore";
 
+import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import {
   consultaNotificacoesDoUsuario,
@@ -44,7 +45,7 @@ export default function Notificacoes() {
   useEffect(() => {
     const usuarioAtual = auth.currentUser;
     if (!usuarioAtual) {
-      router.replace("/" as any);
+      router.replace(ROTAS.login);
       return;
     }
 
@@ -74,12 +75,12 @@ export default function Notificacoes() {
     }
 
     router.push({
-      pathname: "/minhas_fotos",
+      pathname: ROTAS.minhasFotos,
       params: {
         fotoInicialId: notificacao.fotoId,
         statusInicial: notificacao.status,
       },
-    } as any);
+    });
   }
 
   async function marcarTodasComoLidas() {

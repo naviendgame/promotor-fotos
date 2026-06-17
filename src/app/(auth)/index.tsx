@@ -8,6 +8,7 @@ import {
   signOut,
 } from "firebase/auth";
 
+import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import { buscarUsuario } from "@/services/usuarios-service";
 
@@ -54,15 +55,13 @@ export default function Home() {
         usuario.tipo === "promotor"
       ) {
         if (usuario.primeiroAcesso === true) {
-          router.replace("/alterar_senha" as any);
+          router.replace(ROTAS.alterarSenha);
         } else if (usuario.tipo === "admin" || usuario.tipo === "super_admin") {
           router.replace(
-            process.env.EXPO_OS === "web"
-              ? ("/painel" as any)
-              : ("/admin" as any),
+            process.env.EXPO_OS === "web" ? ROTAS.painel : ROTAS.admin,
           );
         } else {
-          router.replace("/promotor" as any);
+          router.replace(ROTAS.promotor);
         }
       } else {
         Alert.alert("Erro", "Tipo de usuário inválido.");

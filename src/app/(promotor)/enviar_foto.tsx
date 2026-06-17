@@ -23,6 +23,7 @@ import {
   CATEGORIAS_FOTO,
   nomeCategoriaFoto,
 } from "@/constants/categorias-foto";
+import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import { criarFoto } from "@/services/fotos-service";
 import { buscarUsuario } from "@/services/usuarios-service";
@@ -135,7 +136,7 @@ export default function EnviarFoto() {
           "Acesso removido",
           "Seu cadastro não está mais ativo no sistema.",
         );
-        router.replace("/(auth)/index");
+        router.replace(ROTAS.login);
         return;
       }
 
@@ -591,7 +592,7 @@ export default function EnviarFoto() {
         visible={envioConcluido}
         transparent
         animationType="fade"
-        onRequestClose={() => router.replace("/promotor" as any)}
+        onRequestClose={() => router.replace(ROTAS.promotor)}
       >
         <View
           style={{
@@ -659,7 +660,7 @@ export default function EnviarFoto() {
               </Pressable>
 
               <Pressable
-                onPress={() => router.replace("/promotor" as any)}
+                onPress={() => router.replace(ROTAS.promotor)}
                 style={{
                   minHeight: 48,
                   borderRadius: 7,

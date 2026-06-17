@@ -1,0 +1,27 @@
+import type { Href } from "expo-router";
+
+export const ROTAS = {
+  login: "/" as Href,
+  alterarSenha: "/alterar_senha",
+  admin: "/admin",
+  promotor: "/promotor",
+  painel: "/painel",
+  painelPerfil: "/painel/perfil",
+  painelFotos: "/painel/fotos",
+  painelLojas: "/painel/lojas",
+  painelPromotores: "/painel/promotores",
+  painelRelatorios: "/painel/relatorios",
+  painelAdministradores: "/painel/administradores",
+  verFotos: "/ver_fotos",
+  verLojas: "/ver_lojas",
+  enviarFoto: "/enviar_foto",
+  minhasFotos: "/minhas_fotos",
+  notificacoes: "/notificacoes",
+  perfilAdmin: "/perfil_admin",
+  perfilPromotor: "/perfil_promotor",
+  cadastroAdmin: "/cadastro_admin",
+  cadastroLoja: "/cadastro_loja",
+  cadastroPromotor: "/cadastro_promotor",
+  gerenciarAdmins: "/gerenciar_admins",
+  gerenciarPromotores: "/gerenciar_promotores",
+} as const satisfies Record<string, Href>;

@@ -20,6 +20,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 
+import { ROTAS } from "../constants/routes";
 import { auth, db } from "../services/firebaseConfig";
 
 type PerfilUsuarioProps = {
@@ -67,7 +68,7 @@ export default function PerfilUsuario({
       const usuarioAtual = auth.currentUser;
 
       if (!usuarioAtual) {
-        router.replace("/(auth)/index");
+        router.replace(ROTAS.login);
         return;
       }
 
@@ -75,7 +76,7 @@ export default function PerfilUsuario({
 
       if (!usuarioSnap.exists() || usuarioSnap.data().ativo === false) {
         await signOut(auth);
-        router.replace("/(auth)/index");
+        router.replace(ROTAS.login);
         return;
       }
 
@@ -86,7 +87,7 @@ export default function PerfilUsuario({
         (tipoEsperado === "admin" && !ehAdmin) ||
         (tipoEsperado === "promotor" && dados.tipo !== "promotor")
       ) {
-        router.replace(ehAdmin ? "/admin" : "/promotor");
+        router.replace(ehAdmin ? ROTAS.admin : ROTAS.promotor);
         return;
       }
 
@@ -204,7 +205,7 @@ export default function PerfilUsuario({
 
   async function sair() {
     await signOut(auth);
-    router.replace("/(auth)/index");
+    router.replace(ROTAS.login);
   }
 
   const tituloTipo =

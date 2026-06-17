@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { signOut } from "firebase/auth";
 import { onSnapshot } from "firebase/firestore";
 
+import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import { consultaFotosDoPromotor } from "@/services/fotos-service";
 import { buscarLoja } from "@/services/lojas-service";
@@ -46,7 +47,7 @@ export default function Promotor() {
         const usuarioAtual = auth.currentUser;
 
         if (!usuarioAtual) {
-          router.replace("/" as any);
+          router.replace(ROTAS.login);
           return;
         }
 
@@ -55,7 +56,7 @@ export default function Promotor() {
         if (!usuarioSnap.exists()) {
           await signOut(auth);
           Alert.alert("Erro", "Usuario nao cadastrado no sistema.");
-          router.replace("/" as any);
+          router.replace(ROTAS.login);
           return;
         }
 
@@ -63,7 +64,7 @@ export default function Promotor() {
         if (usuarioData.ativo === false) {
           await signOut(auth);
           Alert.alert("Acesso removido", "Seu acesso nao esta mais ativo.");
-          router.replace("/" as any);
+          router.replace(ROTAS.login);
           return;
         }
 
@@ -127,9 +128,9 @@ export default function Promotor() {
 
   function abrirMinhasFotos(statusInicial?: string, modoInicial?: string) {
     router.push({
-      pathname: "/minhas_fotos",
+      pathname: ROTAS.minhasFotos,
       params: { statusInicial, modoInicial },
-    } as any);
+    });
   }
 
   return (
@@ -168,7 +169,7 @@ export default function Promotor() {
         </View>
         <View style={{ flexDirection: "row", gap: 9 }}>
           <Pressable
-            onPress={() => router.push("/notificacoes" as any)}
+            onPress={() => router.push(ROTAS.notificacoes)}
             accessibilityLabel="Abrir notificações"
             style={estiloBotaoIcone}
           >
@@ -213,7 +214,7 @@ export default function Promotor() {
           </Pressable>
 
           <Pressable
-            onPress={() => router.push("/perfil_promotor" as any)}
+            onPress={() => router.push(ROTAS.perfilPromotor)}
             accessibilityLabel="Abrir perfil"
             style={estiloBotaoIcone}
           >
@@ -359,9 +360,9 @@ export default function Promotor() {
               <Pressable
                 onPress={() =>
                   router.push({
-                    pathname: "/enviar_foto",
+                    pathname: ROTAS.enviarFoto,
                     params: { lojaId: loja.id, lojaNome: loja.nome },
-                  } as any)
+                  })
                 }
                 style={{
                   minHeight: 44,
@@ -464,7 +465,7 @@ export default function Promotor() {
       <Pressable
         onPress={async () => {
           await signOut(auth);
-          router.replace("/" as any);
+          router.replace(ROTAS.login);
         }}
         style={{
           minHeight: 46,

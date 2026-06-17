@@ -16,6 +16,7 @@ import {
   signOut,
 } from "firebase/auth";
 
+import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import { buscarUsuario } from "@/services/usuarios-service";
 
@@ -53,11 +54,11 @@ export default function LoginWeb() {
       const perfil = perfilSnap.data();
 
       if (perfil.primeiroAcesso === true) {
-        router.replace("/alterar_senha");
+        router.replace(ROTAS.alterarSenha);
       } else if (perfil.tipo === "admin" || perfil.tipo === "super_admin") {
-        router.replace("/painel" as any);
+        router.replace(ROTAS.painel);
       } else if (perfil.tipo === "promotor") {
-        router.replace("/promotor");
+        router.replace(ROTAS.promotor);
       } else {
         await signOut(auth);
         setMensagem("Tipo de usuario invalido.");

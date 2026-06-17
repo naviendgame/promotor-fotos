@@ -19,6 +19,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as MediaLibrary from "expo-media-library";
 import { onSnapshot } from "firebase/firestore";
 
+import { ROTAS } from "@/constants/routes";
 import { CATEGORIAS_FOTO_COM_TODAS } from "@/constants/categorias-foto";
 import { STATUS_FOTO_FILTRO_OPCOES } from "@/constants/status-foto";
 import {
@@ -163,7 +164,7 @@ export default function VerFotos() {
       return;
     }
 
-    router.replace("/(auth)/index");
+    router.replace(ROTAS.login);
   }
 
   async function excluirFoto() {

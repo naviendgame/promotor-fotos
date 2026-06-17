@@ -11,6 +11,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { onSnapshot } from "firebase/firestore";
 
+import { ROTAS } from "@/constants/routes";
 import { fotosCollection } from "@/services/fotos-service";
 import { lojasCollection } from "@/services/lojas-service";
 import { consultaPromotores } from "@/services/usuarios-service";
@@ -280,22 +281,22 @@ export default function PainelDashboard() {
               {
                 titulo: "Analisar fotos pendentes",
                 icone: "rate-review" as const,
-                rota: "/painel/fotos",
+                rota: ROTAS.painelFotos,
               },
               {
                 titulo: "Gerenciar promotores",
                 icone: "manage-accounts" as const,
-                rota: "/painel/promotores",
+                rota: ROTAS.painelPromotores,
               },
               {
                 titulo: "Consultar relatorios",
                 icone: "assessment" as const,
-                rota: "/painel/relatorios",
+                rota: ROTAS.painelRelatorios,
               },
             ].map((acao) => (
               <Pressable
                 key={acao.rota}
-                onPress={() => router.push(acao.rota as any)}
+                onPress={() => router.push(acao.rota)}
                 style={{
                   minHeight: 48,
                   borderWidth: 1,
@@ -352,7 +353,7 @@ export default function PainelDashboard() {
               Ultimas fotos recebidas
             </Text>
           </View>
-          <Pressable onPress={() => router.push("/painel/fotos" as any)}>
+          <Pressable onPress={() => router.push(ROTAS.painelFotos)}>
             <Text style={{ color: "#2F6FED", fontWeight: "bold" }}>
               Ver todas
             </Text>

@@ -8,6 +8,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
+import { ROTAS } from "@/constants/routes";
 import { criarUsuarioAuth } from "@/services/criarUsuarioAuth";
 import { auth } from "@/services/firebaseConfig";
 import {
@@ -50,10 +51,10 @@ export default function AdministradoresWeb() {
     let unsubscribe: undefined | (() => void);
     async function iniciar() {
       const atual = auth.currentUser;
-      if (!atual) return router.replace("/(auth)/index");
+      if (!atual) return router.replace(ROTAS.login);
       const perfil = await buscarUsuario(atual.uid);
       if (perfil.data()?.tipo !== "super_admin") {
-        router.replace("/painel" as any);
+        router.replace(ROTAS.painel);
         return;
       }
       setAutorizado(true);

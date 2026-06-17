@@ -4,6 +4,7 @@ import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { updatePassword } from "firebase/auth";
 
+import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import {
   atualizarUsuario,
@@ -50,9 +51,9 @@ export default function AlterarSenha() {
       router.replace(
         tipo === "admin" || tipo === "super_admin"
           ? process.env.EXPO_OS === "web"
-            ? ("/painel" as any)
-            : ("/admin" as any)
-          : ("/promotor" as any),
+            ? ROTAS.painel
+            : ROTAS.admin
+          : ROTAS.promotor,
       );
     } catch (error: any) {
       console.log(error);

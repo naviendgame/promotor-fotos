@@ -1,5 +1,7 @@
 import { Redirect } from "expo-router";
 
+import { ROTAS } from "@/constants/routes";
+
 export default function AdminWeb() {
-  return <Redirect href={"/painel" as any} />;
+  return <Redirect href={ROTAS.painel} />;
 }

@@ -3,5 +3,17 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
+  },
+  "files.exclude": {
+    "**/.expo-panel-preview": true,
+    "**/.expo-structure-validation": true
+  },
+  "files.watcherExclude": {
+    "**/.expo-panel-preview/**": true,
+    "**/.expo-structure-validation/**": true
+  },
+  "search.exclude": {
+    "**/.expo-panel-preview": true,
+    "**/.expo-structure-validation": true
   }
 }

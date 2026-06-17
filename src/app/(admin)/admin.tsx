@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { signOut } from "firebase/auth";
 import { onSnapshot } from "firebase/firestore";
 
+import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import { fotosCollection } from "@/services/fotos-service";
 import { lojasCollection } from "@/services/lojas-service";
@@ -60,7 +61,7 @@ export default function Admin() {
       const usuarioAtual = auth.currentUser;
 
       if (!usuarioAtual) {
-        router.replace("/(auth)/index");
+        router.replace(ROTAS.login);
         return;
       }
 
@@ -69,12 +70,12 @@ export default function Admin() {
 
       if (!dados || dados.ativo === false) {
         await signOut(auth);
-        router.replace("/(auth)/index");
+        router.replace(ROTAS.login);
         return;
       }
 
       if (dados.tipo !== "admin" && dados.tipo !== "super_admin") {
-        router.replace("/promotor");
+        router.replace(ROTAS.promotor);
         return;
       }
 
@@ -122,7 +123,7 @@ export default function Admin() {
   async function sair() {
     try {
       await signOut(auth);
-      router.replace("/(auth)/index");
+      router.replace(ROTAS.login);
     } catch (error) {
       console.log(error);
     }
@@ -158,7 +159,7 @@ export default function Admin() {
         </View>
 
         <Pressable
-          onPress={() => router.push("/perfil_admin" as any)}
+          onPress={() => router.push(ROTAS.perfilAdmin)}
           accessibilityLabel="Abrir perfil"
           style={{
             width: 44,
@@ -230,27 +231,27 @@ export default function Admin() {
       <BotaoPainel
         titulo="Ver fotos"
         icone="photo-library"
-        onPress={() => router.push("/ver_fotos")}
+        onPress={() => router.push(ROTAS.verFotos)}
       />
       <BotaoPainel
         titulo="Gerenciar promotores"
         icone="groups"
-        onPress={() => router.push("/gerenciar_promotores" as any)}
+        onPress={() => router.push(ROTAS.gerenciarPromotores)}
       />
       <BotaoPainel
         titulo="Cadastrar promotor"
         icone="person-add"
-        onPress={() => router.push("/cadastro_promotor")}
+        onPress={() => router.push(ROTAS.cadastroPromotor)}
       />
       <BotaoPainel
         titulo="Ver lojas"
         icone="store"
-        onPress={() => router.push("/ver_lojas")}
+        onPress={() => router.push(ROTAS.verLojas)}
       />
       <BotaoPainel
         titulo="Cadastrar loja"
         icone="add-business"
-        onPress={() => router.push("/cadastro_loja")}
+        onPress={() => router.push(ROTAS.cadastroLoja)}
       />
 
       {tipoUsuario === "super_admin" ? (
@@ -266,13 +267,13 @@ export default function Admin() {
             titulo="Gerenciar administradores"
             icone="admin-panel-settings"
             cor="#7C3AED"
-            onPress={() => router.push("/gerenciar_admins" as any)}
+            onPress={() => router.push(ROTAS.gerenciarAdmins)}
           />
           <BotaoPainel
             titulo="Cadastrar administrador"
             icone="person-add-alt-1"
             cor="#7C3AED"
-            onPress={() => router.push("/cadastro_admin" as any)}
+            onPress={() => router.push(ROTAS.cadastroAdmin)}
           />
         </>
       ) : null}
