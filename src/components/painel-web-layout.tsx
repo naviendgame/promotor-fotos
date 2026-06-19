@@ -10,6 +10,9 @@ import { MaterialIcons } from "@expo/vector-icons";
 import type { Href } from "expo-router";
 import { Link, router, usePathname } from "expo-router";
 import { signOut } from "firebase/auth";
+import Animated, {
+  FadeInDown,
+} from "react-native-reanimated";
 
 import { ROTAS } from "../constants/routes";
 import { auth } from "../services/firebaseConfig";
@@ -34,6 +37,8 @@ const itensMenu: ItemMenu[] = [
   { titulo: "Fotos", href: ROTAS.painelFotos, icone: "photo-library" },
   { titulo: "Promotores", href: ROTAS.painelPromotores, icone: "groups" },
   { titulo: "Lojas", href: ROTAS.painelLojas, icone: "store" },
+  { titulo: "Produtos", href: ROTAS.painelProdutos, icone: "inventory" },
+  { titulo: "Estoque", href: ROTAS.painelEstoque, icone: "fact-check" },
   { titulo: "Relatorios", href: ROTAS.painelRelatorios, icone: "assessment" },
   {
     titulo: "Administradores",
@@ -50,7 +55,7 @@ export default function PainelWebLayout({
 }: PainelWebLayoutProps) {
   const pathname = usePathname();
   const { width } = useWindowDimensions();
-  const compacto = width < 900;
+  const compacto = width < 760;
 
   async function sair() {
     await signOut(auth);
@@ -62,59 +67,126 @@ export default function PainelWebLayout({
   );
 
   return (
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: "#F3F5F8" }}>
-      <View
+    <View style={{ flex: 1, backgroundColor: "#F4F7FB" }}>
+      <Animated.View
+        entering={FadeInDown.duration(240)}
         style={{
-          width: compacto ? 76 : 238,
-          backgroundColor: "#172033",
-          borderRightWidth: 1,
-          borderRightColor: "#243149",
-          paddingHorizontal: compacto ? 10 : 16,
-          paddingVertical: 20,
+          backgroundColor: "white",
+          borderBottomWidth: 1,
+          borderBottomColor: "#DDE6F3",
+          paddingHorizontal: compacto ? 16 : 28,
+          paddingTop: 16,
+          paddingBottom: 12,
+          gap: 14,
+          boxShadow: "0 8px 24px rgba(37, 99, 235, 0.08)",
         }}
       >
         <View
           style={{
-            minHeight: 58,
-            justifyContent: "center",
-            paddingHorizontal: compacto ? 4 : 8,
-            paddingBottom: 18,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 14,
+            flexWrap: "wrap",
           }}
         >
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
-              justifyContent: compacto ? "center" : "flex-start",
-              gap: 10,
+              gap: 12,
+              minWidth: 240,
             }}
           >
             <View
               style={{
-                width: 36,
-                height: 36,
+                width: 42,
+                height: 42,
                 borderRadius: 8,
-                backgroundColor: "#2F6FED",
+                backgroundColor: "#2563EB",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <MaterialIcons name="photo-camera" size={21} color="white" />
+              <MaterialIcons name="photo-camera" size={22} color="white" />
             </View>
-            {!compacto ? (
-              <View>
-                <Text style={{ color: "white", fontSize: 17, fontWeight: "bold" }}>
-                  Promotor Fotos
-                </Text>
-                <Text style={{ color: "#8FA1BF", fontSize: 12, paddingTop: 2 }}>
-                  Painel de gestao
-                </Text>
-              </View>
-            ) : null}
+            <View>
+              <Text style={{ color: "#172033", fontSize: 18, fontWeight: "bold" }}>
+                Promotor Fotos
+              </Text>
+              <Text style={{ color: "#64748B", fontSize: 12, paddingTop: 2 }}>
+                Operacao e acompanhamento
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+            }}
+          >
+            <Link href={ROTAS.painelPerfil} asChild>
+              <Pressable
+                accessibilityLabel="Abrir perfil"
+                style={{
+                  minHeight: 40,
+                  borderWidth: 1,
+                  borderColor: "#D6E0F0",
+                  borderRadius: 8,
+                  paddingHorizontal: 11,
+                  backgroundColor: "#F8FAFF",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 9,
+                }}
+              >
+                <MaterialIcons name="person" size={20} color="#2563EB" />
+                {!compacto ? (
+                  <View>
+                    <Text selectable style={{ color: "#172033", fontWeight: "bold" }}>
+                      {nomeUsuario || "Administrador"}
+                    </Text>
+                    <Text style={{ color: "#64748B", fontSize: 12 }}>
+                      {tipoUsuario === "super_admin"
+                        ? "Administrador principal"
+                        : "Administrador"}
+                    </Text>
+                  </View>
+                ) : null}
+              </Pressable>
+            </Link>
+
+            <Pressable
+              onPress={sair}
+              accessibilityLabel="Sair"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: "#F0C8CC",
+                backgroundColor: "#FFF5F6",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MaterialIcons name="logout" size={20} color="#A33A34" />
+            </Pressable>
           </View>
         </View>
 
-        <View style={{ flex: 1, gap: 5 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
           {menuVisivel.map((item) => {
             const ativo =
               item.href === "/painel"
@@ -126,124 +198,50 @@ export default function PainelWebLayout({
                 <Pressable
                   accessibilityLabel={item.titulo}
                   style={{
-                    minHeight: 46,
-                    borderRadius: 7,
-                    paddingHorizontal: compacto ? 0 : 12,
+                    minHeight: 38,
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    borderWidth: 1,
+                    borderColor: ativo ? "#2563EB" : "#D6E0F0",
                     flexDirection: "row",
                     alignItems: "center",
-                    justifyContent: compacto ? "center" : "flex-start",
-                    gap: 11,
-                    backgroundColor: ativo ? "#2F6FED" : "transparent",
+                    gap: 8,
+                    backgroundColor: ativo ? "#2563EB" : "#F8FAFF",
+                    boxShadow: ativo
+                      ? "0 8px 18px rgba(37, 99, 235, 0.22)"
+                    : "none",
                   }}
                 >
                   <MaterialIcons
                     name={item.icone}
-                    size={21}
-                    color={ativo ? "white" : "#AEBBD0"}
+                    size={18}
+                    color={ativo ? "white" : "#5B6B83"}
                   />
-                  {!compacto ? (
-                    <Text
-                      style={{
-                        color: ativo ? "white" : "#D6DEEA",
-                        fontWeight: ativo ? "bold" : "normal",
-                      }}
-                    >
-                      {item.titulo}
-                    </Text>
-                  ) : null}
+                  <Text
+                    style={{
+                      color: ativo ? "white" : "#334155",
+                      fontWeight: ativo ? "bold" : "600",
+                      fontSize: 13,
+                    }}
+                  >
+                    {item.titulo}
+                  </Text>
                 </Pressable>
               </Link>
             );
           })}
         </View>
+      </Animated.View>
 
-        <Pressable
-          onPress={sair}
-          accessibilityLabel="Sair"
-          style={{
-            minHeight: 46,
-            borderRadius: 7,
-            paddingHorizontal: compacto ? 0 : 12,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: compacto ? "center" : "flex-start",
-            gap: 11,
-          }}
-        >
-          <MaterialIcons name="logout" size={21} color="#F39AA2" />
-          {!compacto ? (
-            <Text style={{ color: "#F4B0B6", fontWeight: "bold" }}>Sair</Text>
-          ) : null}
-        </Pressable>
-      </View>
-
-      <View style={{ flex: 1 }}>
-        <View
-          style={{
-            height: 68,
-            backgroundColor: "white",
-            borderBottomWidth: 1,
-            borderBottomColor: "#DDE2EA",
-            paddingHorizontal: compacto ? 18 : 28,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-          }}
-        >
-          <Text style={{ color: "#657189", fontSize: 14 }}>
-            Operacao e acompanhamento
-          </Text>
-
-          <Link href={ROTAS.painelPerfil} asChild>
-            <Pressable
-              accessibilityLabel="Abrir perfil"
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              {!compacto ? (
-                <View style={{ alignItems: "flex-end" }}>
-                  <Text
-                    selectable
-                    style={{ color: "#172033", fontWeight: "bold" }}
-                  >
-                    {nomeUsuario || "Administrador"}
-                  </Text>
-                  <Text style={{ color: "#7A879D", fontSize: 12, paddingTop: 2 }}>
-                    {tipoUsuario === "super_admin"
-                      ? "Administrador principal"
-                      : "Administrador"}
-                  </Text>
-                </View>
-              ) : null}
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 8,
-                  backgroundColor: "#E8EFFD",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <MaterialIcons name="person" size={23} color="#2F6FED" />
-              </View>
-            </Pressable>
-          </Link>
-        </View>
-
-        <View
-          style={{
-            flex: 1,
-            padding: compacto ? 18 : 28,
-          }}
-        >
-          {children}
-        </View>
-      </View>
+      <Animated.View
+        entering={FadeInDown.duration(260).delay(70)}
+        style={{
+          flex: 1,
+          padding: compacto ? 16 : 28,
+        }}
+      >
+        {children}
+      </Animated.View>
     </View>
   );
 }

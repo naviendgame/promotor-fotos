@@ -14,6 +14,11 @@ import {
   onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
+import Animated, {
+  FadeInUp,
+  LinearTransition,
+  ZoomIn,
+} from "react-native-reanimated";
 
 import {
   criarLoja,
@@ -91,14 +96,20 @@ export default function LojasWeb() {
 
       <CampoBusca valor={busca} onChange={setBusca} placeholder="Buscar loja, cidade ou estado" />
 
-      <View style={tabela}>
+      <Animated.View
+        entering={FadeInUp.duration(260)}
+        layout={LinearTransition.duration(180)}
+        style={tabela}
+      >
         <View style={cabecalhoTabela}>
           <Text style={[celulaCabecalho, { flex: 1.5 }]}>LOJA</Text>
           <Text style={celulaCabecalho}>CIDADE</Text>
           <Text style={celulaCabecalho}>ESTADO</Text>
         </View>
         {filtradas.map((loja, indice) => (
-          <View
+          <Animated.View
+            entering={FadeInUp.duration(220).delay(indice * 35)}
+            layout={LinearTransition.duration(160)}
             key={loja.id}
             style={[
               linhaTabela,
@@ -113,10 +124,10 @@ export default function LojasWeb() {
             </View>
             <Text style={celula}>{loja.cidade || "-"}</Text>
             <Text style={celula}>{loja.estado || "-"}</Text>
-          </View>
+          </Animated.View>
         ))}
         {filtradas.length === 0 ? <Vazio texto="Nenhuma loja encontrada." /> : null}
-      </View>
+      </Animated.View>
 
       <FormularioModal
         visivel={modalAberto}
@@ -147,7 +158,8 @@ export function Cabecalho({
   onPress?: () => void;
 }) {
   return (
-    <View
+    <Animated.View
+      entering={FadeInUp.duration(240)}
       style={{
         flexDirection: "row",
         justifyContent: "space-between",
@@ -158,7 +170,7 @@ export function Cabecalho({
     >
       <View>
         <Text style={{ color: "#172033", fontSize: 27, fontWeight: "bold" }}>{titulo}</Text>
-        <Text style={{ color: "#68758A", paddingTop: 5 }}>{subtitulo}</Text>
+        <Text style={{ color: "#64748B", paddingTop: 5 }}>{subtitulo}</Text>
       </View>
       {botao && onPress ? (
         <Pressable onPress={onPress} style={botaoPrimario}>
@@ -166,7 +178,7 @@ export function Cabecalho({
           <Text style={{ color: "white", fontWeight: "bold" }}>{botao}</Text>
         </Pressable>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -180,21 +192,23 @@ export function CampoBusca({
   placeholder: string;
 }) {
   return (
-    <View
+    <Animated.View
+      entering={FadeInUp.duration(240).delay(40)}
       style={{
         maxWidth: 430,
         minHeight: 44,
         borderWidth: 1,
-        borderColor: "#D8DEE8",
-        borderRadius: 7,
+        borderColor: "#D6E0F0",
+        borderRadius: 8,
         backgroundColor: "white",
         paddingHorizontal: 12,
         flexDirection: "row",
         alignItems: "center",
         gap: 9,
+        boxShadow: "0 8px 18px rgba(37, 99, 235, 0.06)",
       }}
     >
-      <MaterialIcons name="search" size={20} color="#8B97A9" />
+      <MaterialIcons name="search" size={20} color="#64748B" />
       <TextInput
         value={valor}
         onChangeText={onChange}
@@ -202,7 +216,7 @@ export function CampoBusca({
         placeholderTextColor="#9AA5B5"
         style={{ flex: 1, color: "#263247", paddingVertical: 11 }}
       />
-    </View>
+    </Animated.View>
   );
 }
 
@@ -230,7 +244,7 @@ export function Campo({
         style={{
           minHeight: 44,
           borderWidth: 1,
-          borderColor: "#D5DBE5",
+          borderColor: "#D6E0F0",
           borderRadius: 7,
           paddingHorizontal: 11,
           color: "#172033",
@@ -258,7 +272,17 @@ export function FormularioModal({
   return (
     <Modal visible={visivel} transparent animationType="fade" onRequestClose={onClose}>
       <View style={fundoModal}>
-        <View style={{ width: "100%", maxWidth: 520, maxHeight: "88%", backgroundColor: "white", borderRadius: 8 }}>
+        <Animated.View
+          entering={ZoomIn.duration(180)}
+          style={{
+            width: "100%",
+            maxWidth: 520,
+            maxHeight: "88%",
+            backgroundColor: "white",
+            borderRadius: 8,
+            boxShadow: "0 18px 50px rgba(15, 23, 42, 0.22)",
+          }}
+        >
           <View style={tituloModal}>
             <Text style={{ color: "#172033", fontSize: 20, fontWeight: "bold" }}>{titulo}</Text>
             <Pressable onPress={onClose} style={botaoFechar}>
@@ -276,7 +300,7 @@ export function FormularioModal({
               </Text>
             </Pressable>
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -289,23 +313,24 @@ export function Vazio({ texto }: { texto: string }) {
 export const tabela = {
   backgroundColor: "white",
   borderWidth: 1,
-  borderColor: "#E0E5ED",
+  borderColor: "#DDE6F3",
   borderRadius: 8,
   overflow: "hidden" as const,
+  boxShadow: "0 10px 24px rgba(37, 99, 235, 0.07)",
 };
 export const cabecalhoTabela = {
-  minHeight: 42,
-  backgroundColor: "#F7F8FA",
+  minHeight: 44,
+  backgroundColor: "#F8FAFF",
   borderBottomWidth: 1,
-  borderBottomColor: "#E3E7EE",
+  borderBottomColor: "#E4ECF8",
   paddingHorizontal: 17,
   flexDirection: "row" as const,
   alignItems: "center" as const,
   gap: 14,
 };
 export const linhaTabela = {
-  minHeight: 66,
-  borderBottomColor: "#EDF0F4",
+  minHeight: 68,
+  borderBottomColor: "#EEF3FA",
   paddingHorizontal: 17,
   paddingVertical: 11,
   flexDirection: "row" as const,
@@ -314,10 +339,10 @@ export const linhaTabela = {
 };
 export const celulaCabecalho = { flex: 1, color: "#7B879A", fontSize: 11, fontWeight: "bold" as const };
 export const celula = { flex: 1, color: "#59677D" };
-export const iconeLinha = { width: 34, height: 34, borderRadius: 7, backgroundColor: "#E9F0FE", alignItems: "center" as const, justifyContent: "center" as const };
-export const botaoPrimario = { minHeight: 42, borderRadius: 7, backgroundColor: "#2F6FED", paddingHorizontal: 15, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 8 };
+export const iconeLinha = { width: 34, height: 34, borderRadius: 7, backgroundColor: "#EAF1FF", alignItems: "center" as const, justifyContent: "center" as const };
+export const botaoPrimario = { minHeight: 42, borderRadius: 8, backgroundColor: "#2563EB", paddingHorizontal: 15, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 8, boxShadow: "0 8px 18px rgba(37, 99, 235, 0.22)" };
 const fundoModal = { flex: 1, backgroundColor: "rgba(20,28,42,0.62)", justifyContent: "center" as const, alignItems: "center" as const, padding: 22 };
-const tituloModal = { minHeight: 62, borderBottomWidth: 1, borderBottomColor: "#E5E9EF", paddingHorizontal: 20, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const };
-const rodapeModal = { minHeight: 68, borderTopWidth: 1, borderTopColor: "#E5E9EF", paddingHorizontal: 20, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "flex-end" as const, gap: 9 };
+const tituloModal = { minHeight: 62, borderBottomWidth: 1, borderBottomColor: "#E4ECF8", paddingHorizontal: 20, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const };
+const rodapeModal = { minHeight: 68, borderTopWidth: 1, borderTopColor: "#E4ECF8", paddingHorizontal: 20, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "flex-end" as const, gap: 9 };
 const botaoFechar = { width: 36, height: 36, borderRadius: 7, backgroundColor: "#F0F2F6", alignItems: "center" as const, justifyContent: "center" as const };
 const botaoSecundario = { minHeight: 42, borderRadius: 7, borderWidth: 1, borderColor: "#D7DDE7", paddingHorizontal: 15, justifyContent: "center" as const };

@@ -4,10 +4,13 @@ import {
   doc,
   getDoc,
   query,
+  serverTimestamp,
   setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
+
+import type { Usuario } from "@/types/usuario";
 
 import { db } from "./firebaseConfig";
 
@@ -21,6 +24,19 @@ export function usuarioDoc(usuarioId: string) {
 
 export function buscarUsuario(usuarioId: string) {
   return getDoc(usuarioDoc(usuarioId));
+}
+
+export async function buscarPerfilUsuario(usuarioId: string) {
+  const usuarioSnap = await buscarUsuario(usuarioId);
+
+  if (!usuarioSnap.exists()) {
+    return null;
+  }
+
+  return {
+    id: usuarioSnap.id,
+    ...usuarioSnap.data(),
+  } as Usuario;
 }
 
 export function criarUsuario(usuarioId: string, dados: Record<string, any>) {
@@ -40,6 +56,17 @@ export function consultaAdministradores() {
 
 export function atualizarUsuario(usuarioId: string, dados: Record<string, any>) {
   return updateDoc(usuarioDoc(usuarioId), dados);
+}
+
+export function atualizarDadosPerfilUsuario(
+  usuarioId: string,
+  dados: { nome: string; email: string },
+) {
+  return atualizarUsuario(usuarioId, {
+    nome: dados.nome,
+    email: dados.email,
+    atualizadoEm: serverTimestamp(),
+  });
 }
 
 export function excluirUsuario(usuarioId: string) {

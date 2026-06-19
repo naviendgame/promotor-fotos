@@ -9,6 +9,8 @@ export const ROTAS = {
   painelPerfil: "/painel/perfil",
   painelFotos: "/painel/fotos",
   painelLojas: "/painel/lojas",
+  painelProdutos: "/painel/produtos",
+  painelEstoque: "/painel/estoque",
   painelPromotores: "/painel/promotores",
   painelRelatorios: "/painel/relatorios",
   painelAdministradores: "/painel/administradores",

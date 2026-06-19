@@ -6,6 +6,10 @@ import {
   onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
+import Animated, {
+  FadeInUp,
+  LinearTransition,
+} from "react-native-reanimated";
 
 import { criarUsuarioAuth } from "@/services/criarUsuarioAuth";
 import { lojasCollection } from "@/services/lojas-service";
@@ -148,12 +152,12 @@ export default function PromotoresWeb() {
             key={loja.id}
             onPress={() => alternarLoja(loja.id)}
             style={{
-              minHeight: 44, borderWidth: 1, borderColor: ativa ? "#2F6FED" : "#D8DEE8",
-              borderRadius: 7, backgroundColor: ativa ? "#EEF3FD" : "white",
+              minHeight: 44, borderWidth: 1, borderColor: ativa ? "#2563EB" : "#D6E0F0",
+              borderRadius: 8, backgroundColor: ativa ? "#EAF1FF" : "white",
               paddingHorizontal: 11, flexDirection: "row", alignItems: "center", gap: 9,
             }}
           >
-            <MaterialIcons name={ativa ? "check-box" : "check-box-outline-blank"} size={21} color={ativa ? "#2F6FED" : "#8A96A9"} />
+            <MaterialIcons name={ativa ? "check-box" : "check-box-outline-blank"} size={21} color={ativa ? "#2563EB" : "#8A96A9"} />
             <Text style={{ color: "#34415A", fontWeight: ativa ? "bold" : "normal" }}>{loja.nome}</Text>
           </Pressable>
         );
@@ -165,7 +169,11 @@ export default function PromotoresWeb() {
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 18, paddingBottom: 28 }}>
       <Cabecalho titulo="Promotores" subtitulo={`${promotores.length} profissionais cadastrados`} botao="Novo promotor" icone="person-add" onPress={() => { setSelecionadas([]); setNovoAberto(true); }} />
       <CampoBusca valor={busca} onChange={setBusca} placeholder="Buscar por nome ou email" />
-      <View style={tabela}>
+      <Animated.View
+        entering={FadeInUp.duration(260)}
+        layout={LinearTransition.duration(180)}
+        style={tabela}
+      >
         <View style={cabecalhoTabela}>
           <Text style={[celulaCabecalho, { flex: 1.4 }]}>PROMOTOR</Text>
           <Text style={[celulaCabecalho, { flex: 1.5 }]}>LOJAS</Text>
@@ -175,7 +183,15 @@ export default function PromotoresWeb() {
         {filtrados.map((item, indice) => {
           const ativo = item.ativo !== false;
           return (
-            <View key={item.id} style={[linhaTabela, { borderBottomWidth: indice < filtrados.length - 1 ? 1 : 0 }]}>
+            <Animated.View
+              key={item.id}
+              entering={FadeInUp.duration(220).delay(indice * 35)}
+              layout={LinearTransition.duration(160)}
+              style={[
+                linhaTabela,
+                { borderBottomWidth: indice < filtrados.length - 1 ? 1 : 0 },
+              ]}
+            >
               <View style={{ flex: 1.4, flexDirection: "row", alignItems: "center", gap: 10 }}>
                 <View style={iconeLinha}><MaterialIcons name="person" size={19} color="#2F6FED" /></View>
                 <View style={{ flex: 1 }}>
@@ -192,11 +208,11 @@ export default function PromotoresWeb() {
                 <IconeAcao icone={ativo ? "block" : "check-circle"} titulo={ativo ? "Desativar" : "Reativar"} onPress={() => alternarAcesso(item)} />
                 <IconeAcao icone="delete-outline" titulo="Excluir" perigo onPress={() => excluir(item)} />
               </View>
-            </View>
+            </Animated.View>
           );
         })}
         {filtrados.length === 0 ? <Vazio texto="Nenhum promotor encontrado." /> : null}
-      </View>
+      </Animated.View>
 
       <FormularioModal visivel={novoAberto} titulo="Cadastrar promotor" onClose={() => setNovoAberto(false)} onSave={cadastrar} salvando={salvando}>
         <Campo rotulo="Nome completo" valor={nome} onChange={setNome} />
@@ -213,7 +229,7 @@ export default function PromotoresWeb() {
 
 function IconeAcao({ icone, titulo, onPress, perigo }: { icone: keyof typeof MaterialIcons.glyphMap; titulo: string; onPress: () => void; perigo?: boolean }) {
   return (
-    <Pressable onPress={onPress} accessibilityLabel={titulo} style={{ width: 34, height: 34, borderRadius: 6, borderWidth: 1, borderColor: perigo ? "#F0C8CC" : "#D8DEE8", alignItems: "center", justifyContent: "center" }}>
+    <Pressable onPress={onPress} accessibilityLabel={titulo} style={{ width: 34, height: 34, borderRadius: 7, borderWidth: 1, borderColor: perigo ? "#F0C8CC" : "#D6E0F0", backgroundColor: perigo ? "#FFF5F6" : "#F8FAFF", alignItems: "center", justifyContent: "center" }}>
       <MaterialIcons name={icone} size={18} color={perigo ? "#B5323E" : "#526076"} />
     </Pressable>
   );

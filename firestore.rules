@@ -1,0 +1,155 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function usuarioAtual() {
+      return get(
+        /databases/$(database)/documents/usuarios/$(request.auth.uid)
+      ).data;
+    }
+
+    function usuarioAtivo() {
+      return autenticado()
+        && usuarioAtual().ativo != false;
+    }
+
+    function admin() {
+      return usuarioAtivo()
+        && usuarioAtual().tipo in ["admin", "super_admin"];
+    }
+
+    function superAdmin() {
+      return usuarioAtivo()
+        && usuarioAtual().tipo == "super_admin";
+    }
+
+    match /usuarios/{usuarioId} {
+      allow read: if usuarioAtivo()
+        && (request.auth.uid == usuarioId || admin());
+
+      allow create: if admin()
+        && request.resource.data.tipo == "promotor";
+
+      allow create: if superAdmin()
+        && request.resource.data.tipo == "admin";
+
+      allow update: if usuarioAtivo()
+        && request.auth.uid == usuarioId
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "nome",
+            "email",
+            "primeiroAcesso",
+            "atualizadoEm"
+          ]);
+
+      allow update: if admin()
+        && resource.data.tipo == "promotor"
+        && request.resource.data.tipo == "promotor"
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "lojasIds",
+            "ativo",
+            "atualizadoEm"
+          ]);
+
+      allow update: if superAdmin()
+        && resource.data.tipo == "admin"
+        && request.resource.data.tipo == "admin"
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "ativo",
+            "atualizadoEm"
+          ]);
+
+      allow delete: if admin()
+        && resource.data.tipo == "promotor";
+    }
+
+    match /lojas/{lojaId} {
+      allow read: if usuarioAtivo();
+      allow create, update, delete: if admin();
+    }
+
+    match /produtos/{produtoId} {
+      allow read: if usuarioAtivo();
+      allow create, update, delete: if admin();
+    }
+
+    match /fotos/{fotoId} {
+      allow read: if admin()
+        || (
+          usuarioAtivo()
+          && resource.data.promotorId == request.auth.uid
+        );
+
+      allow create: if usuarioAtivo()
+        && usuarioAtual().tipo == "promotor"
+        && request.resource.data.promotorId == request.auth.uid
+        && request.resource.data.status == "pendente";
+
+      allow update: if usuarioAtivo()
+        && usuarioAtual().tipo == "promotor"
+        && resource.data.promotorId == request.auth.uid
+        && request.resource.data.promotorId == request.auth.uid
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "naLixeira",
+            "excluidaEm",
+            "excluidaPor",
+            "restauradaEm"
+          ])
+        && (
+          request.resource.data.excluidaPor == request.auth.uid
+          || request.resource.data.excluidaPor == null
+        );
+
+      allow update, delete: if admin();
+    }
+
+    match /notificacoes/{notificacaoId} {
+      allow create: if admin();
+
+      allow read: if usuarioAtivo()
+        && resource.data.destinatarioId == request.auth.uid;
+
+      allow update: if usuarioAtivo()
+        && resource.data.destinatarioId == request.auth.uid
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "lida",
+            "lidaEm"
+          ]);
+
+      allow delete: if admin();
+    }
+
+    match /ocorrencias_estoque/{ocorrenciaId} {
+      allow read: if admin()
+        || (
+          usuarioAtivo()
+          && resource.data.promotorId == request.auth.uid
+        );
+
+      allow create: if usuarioAtivo()
+        && usuarioAtual().tipo == "promotor"
+        && request.resource.data.promotorId == request.auth.uid
+        && request.resource.data.tipo in ["estoque", "avaria"];
+
+      allow update, delete: if admin();
+    }
+
+    match /{documento=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { signOut } from "firebase/auth";
 import {
+  onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
 
@@ -23,10 +24,20 @@ import {
   CATEGORIAS_FOTO,
   nomeCategoriaFoto,
 } from "@/constants/categorias-foto";
+import {
+  DESTINOS_AVARIA,
+  MOTIVOS_AVARIA,
+  categoriaExigeOcorrenciaEstoque,
+  tipoOcorrenciaPorCategoria,
+} from "@/constants/estoque";
 import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import { criarFoto } from "@/services/fotos-service";
+import { criarOcorrenciaEstoque } from "@/services/ocorrencias-estoque-service";
+import { consultaProdutosAtivos } from "@/services/produtos-service";
 import { buscarUsuario } from "@/services/usuarios-service";
+import type { ItemOcorrenciaEstoque } from "@/types/ocorrencia-estoque";
+import type { Produto } from "@/types/produto";
 import { prepararImagemBase64 } from "@/utils/imagem";
 import { primeiroParametro } from "@/utils/params";
 
@@ -59,15 +70,86 @@ export default function EnviarFoto() {
   );
   const [etapaEnvio, setEtapaEnvio] = useState<EtapaEnvio>(null);
   const [envioConcluido, setEnvioConcluido] = useState(false);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [buscaProduto, setBuscaProduto] = useState("");
+  const [produtoSelecionadoId, setProdutoSelecionadoId] = useState("");
+  const [estoqueLoja, setEstoqueLoja] = useState("");
+  const [estoqueDisponivel, setEstoqueDisponivel] = useState("");
+  const [ruptura, setRuptura] = useState(false);
+  const [quantidadeRuptura, setQuantidadeRuptura] = useState("");
+  const [quantidadeAvaria, setQuantidadeAvaria] = useState("");
+  const [motivoAvaria, setMotivoAvaria] = useState(MOTIVOS_AVARIA[0]);
+  const [destinoAvaria, setDestinoAvaria] = useState(DESTINOS_AVARIA[0]);
+  const [observacaoItem, setObservacaoItem] = useState("");
+  const [itensOcorrencia, setItensOcorrencia] = useState<
+    ItemOcorrenciaEstoque[]
+  >([]);
 
   const enviando = etapaEnvio !== null;
-  const formularioValido = !!imagem && !!categoria && !enviando;
+  const tipoOcorrencia = tipoOcorrenciaPorCategoria(categoria);
+  const exigeOcorrencia = categoriaExigeOcorrenciaEstoque(categoria);
+  const formularioValido =
+    !!imagem &&
+    !!categoria &&
+    (!exigeOcorrencia || itensOcorrencia.length > 0) &&
+    !enviando;
   const categoriaExibicao = nomeCategoriaFoto(categoria);
+  const produtoSelecionado = produtos.find(
+    (produto) => produto.id === produtoSelecionadoId,
+  );
+
+  const produtosFiltrados = useMemo(() => {
+    const termo = buscaProduto.trim().toLocaleLowerCase("pt-BR");
+    const ativos = produtos.filter((produto) => produto.ativo !== false);
+
+    if (!termo) return ativos.slice(0, 8);
+
+    return ativos
+      .filter((produto) =>
+        [
+          produto.codigo,
+          produto.nome,
+          produto.complemento,
+          produto.marca,
+          produto.fornecedor,
+        ]
+          .join(" ")
+          .toLocaleLowerCase("pt-BR")
+          .includes(termo),
+      )
+      .slice(0, 8);
+  }, [buscaProduto, produtos]);
+
+  useEffect(() => {
+    return onSnapshot(consultaProdutosAtivos(), (snapshot) => {
+      setProdutos(
+        snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        })) as Produto[],
+      );
+    });
+  }, []);
+
+  useEffect(() => {
+    setProdutoSelecionadoId("");
+    setBuscaProduto("");
+    setEstoqueLoja("");
+    setEstoqueDisponivel("");
+    setRuptura(false);
+    setQuantidadeRuptura("");
+    setQuantidadeAvaria("");
+    setMotivoAvaria(MOTIVOS_AVARIA[0]);
+    setDestinoAvaria(DESTINOS_AVARIA[0]);
+    setObservacaoItem("");
+    setItensOcorrencia([]);
+  }, [tipoOcorrencia]);
 
   function removerImagem() {
     if (enviando) return;
     setImagem(null);
     setCategoria(null);
+    setItensOcorrencia([]);
   }
 
   async function tirarFoto() {
@@ -108,10 +190,71 @@ export default function EnviarFoto() {
     }
   }
 
+  function numeroOuZero(valor: string) {
+    const numero = Number(valor.replace(",", "."));
+    return Number.isFinite(numero) && numero >= 0 ? numero : 0;
+  }
+
+  function limparFormularioItem() {
+    setProdutoSelecionadoId("");
+    setBuscaProduto("");
+    setEstoqueLoja("");
+    setEstoqueDisponivel("");
+    setRuptura(false);
+    setQuantidadeRuptura("");
+    setQuantidadeAvaria("");
+    setMotivoAvaria(MOTIVOS_AVARIA[0]);
+    setDestinoAvaria(DESTINOS_AVARIA[0]);
+    setObservacaoItem("");
+  }
+
+  function adicionarItemOcorrencia() {
+    if (!produtoSelecionado || !tipoOcorrencia) {
+      Alert.alert("Produto", "Selecione um produto para adicionar.");
+      return;
+    }
+
+    const itemBase = {
+      produtoId: produtoSelecionado.id,
+      codigo: produtoSelecionado.codigo || "",
+      nome: produtoSelecionado.nome,
+      complemento: produtoSelecionado.complemento || "",
+      observacao: observacaoItem.trim(),
+    };
+
+    const item: ItemOcorrenciaEstoque =
+      tipoOcorrencia === "avaria"
+        ? {
+            ...itemBase,
+            quantidadeAvaria: numeroOuZero(quantidadeAvaria),
+            motivoAvaria,
+            destinoAvaria,
+          }
+        : {
+            ...itemBase,
+            estoqueLoja: numeroOuZero(estoqueLoja),
+            estoqueDisponivel: numeroOuZero(estoqueDisponivel),
+            ruptura,
+            quantidadeRuptura: ruptura ? numeroOuZero(quantidadeRuptura) : 0,
+          };
+
+    setItensOcorrencia((atuais) => [...atuais, item]);
+    limparFormularioItem();
+  }
+
+  function removerItemOcorrencia(indice: number) {
+    if (enviando) return;
+    setItensOcorrencia((atuais) =>
+      atuais.filter((_, itemIndice) => itemIndice !== indice),
+    );
+  }
+
   async function enviarFoto() {
     const categoriaSelecionada = categoria;
 
     if (!formularioValido || !imagem || !categoriaSelecionada) return;
+    const tipoOcorrenciaSelecionada =
+      tipoOcorrenciaPorCategoria(categoriaSelecionada);
 
     try {
       const usuarioAtual = auth.currentUser;
@@ -147,7 +290,7 @@ export default function EnviarFoto() {
         "";
 
       setEtapaEnvio("enviando");
-      await criarFoto({
+      const fotoRef = await criarFoto({
         lojaId,
         lojaNome,
         promotorId: usuarioAtual.uid,
@@ -165,6 +308,23 @@ export default function EnviarFoto() {
         motivoRefacao: ehRefacao ? motivoRefacao : "",
       });
 
+      if (tipoOcorrenciaSelecionada && itensOcorrencia.length > 0) {
+        await criarOcorrenciaEstoque({
+          tipo: tipoOcorrenciaSelecionada,
+          fotoId: fotoRef.id,
+          lojaId,
+          lojaNome,
+          promotorId: usuarioAtual.uid,
+          promotorNome,
+          promotorEmail: usuarioAtual.email || "",
+          categoriaFoto: categoriaSelecionada,
+          observacao: observacao.trim(),
+          itens: itensOcorrencia,
+          status: "pendente",
+          criadoEm: serverTimestamp(),
+        });
+      }
+
       setEnvioConcluido(true);
     } catch (error: any) {
       console.log(error);
@@ -181,6 +341,8 @@ export default function EnviarFoto() {
     setImagem(null);
     setCategoria(ehRefacao ? categoriaInicial || null : null);
     setObservacao("");
+    setItensOcorrencia([]);
+    limparFormularioItem();
     setEnvioConcluido(false);
   }
 
@@ -511,6 +673,297 @@ export default function EnviarFoto() {
                 }}
               />
             </View>
+
+            {tipoOcorrencia ? (
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#2E3D59",
+                  borderRadius: 8,
+                  backgroundColor: "#151E2E",
+                  padding: 13,
+                  gap: 13,
+                }}
+              >
+                <View style={{ gap: 4 }}>
+                  <Text style={{ color: "white", fontWeight: "bold" }}>
+                    {tipoOcorrencia === "avaria"
+                      ? "Produtos para avaria / devolucao"
+                      : "Produtos do relatorio de estoque"}
+                  </Text>
+                  <Text style={{ color: "#94A3B8", lineHeight: 19 }}>
+                    Adicione um ou mais produtos. Esses dados vao aparecer no
+                    painel em estoque e devolucoes.
+                  </Text>
+                </View>
+
+                <TextInput
+                  value={buscaProduto}
+                  onChangeText={setBuscaProduto}
+                  placeholder="Buscar produto cadastrado"
+                  placeholderTextColor="#687386"
+                  editable={!enviando}
+                  style={{
+                    minHeight: 44,
+                    borderWidth: 1,
+                    borderColor: "#38445A",
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    color: "white",
+                    backgroundColor: "#101722",
+                  }}
+                />
+
+                <View style={{ gap: 8 }}>
+                  {produtosFiltrados.map((produto) => {
+                    const selecionado = produtoSelecionadoId === produto.id;
+
+                    return (
+                      <Pressable
+                        key={produto.id}
+                        onPress={() => setProdutoSelecionadoId(produto.id)}
+                        disabled={enviando}
+                        style={{
+                          minHeight: 48,
+                          borderWidth: 1,
+                          borderColor: selecionado ? "#7AA2F7" : "#334155",
+                          borderRadius: 8,
+                          backgroundColor: selecionado ? "#214D99" : "#101722",
+                          paddingHorizontal: 11,
+                          paddingVertical: 8,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                      >
+                        <MaterialIcons
+                          name={selecionado ? "check-circle" : "inventory-2"}
+                          size={21}
+                          color={selecionado ? "white" : "#8EA0BA"}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            numberOfLines={1}
+                            style={{
+                              color: selecionado ? "white" : "#E2E8F0",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {produto.codigo ? `${produto.codigo} - ` : ""}
+                            {produto.nome}
+                          </Text>
+                          <Text
+                            numberOfLines={1}
+                            style={{
+                              color: selecionado ? "#CFE0FF" : "#94A3B8",
+                              fontSize: 12,
+                              paddingTop: 2,
+                            }}
+                          >
+                            {produto.complemento ||
+                              produto.fornecedor ||
+                              "Produto cadastrado"}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+
+                  {produtos.length === 0 ? (
+                    <Text style={{ color: "#F4B740", lineHeight: 19 }}>
+                      Nenhum produto ativo cadastrado. Cadastre produtos no
+                      painel web antes de enviar este tipo de relatorio.
+                    </Text>
+                  ) : null}
+                </View>
+
+                {produtoSelecionado ? (
+                  <View style={{ gap: 10 }}>
+                    {tipoOcorrencia === "estoque" ? (
+                      <>
+                        <View style={{ flexDirection: "row", gap: 9 }}>
+                          <CampoNumero
+                            rotulo="Estoque loja"
+                            valor={estoqueLoja}
+                            onChange={setEstoqueLoja}
+                          />
+                          <CampoNumero
+                            rotulo="Estoque disponivel"
+                            valor={estoqueDisponivel}
+                            onChange={setEstoqueDisponivel}
+                          />
+                        </View>
+
+                        <Pressable
+                          onPress={() => setRuptura((atual) => !atual)}
+                          disabled={enviando}
+                          style={{
+                            minHeight: 44,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: ruptura ? "#F59E0B" : "#38445A",
+                            backgroundColor: ruptura ? "#3C2A0E" : "#101722",
+                            paddingHorizontal: 11,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 9,
+                          }}
+                        >
+                          <MaterialIcons
+                            name={
+                              ruptura
+                                ? "check-box"
+                                : "check-box-outline-blank"
+                            }
+                            size={22}
+                            color={ruptura ? "#FBBF24" : "#8EA0BA"}
+                          />
+                          <Text
+                            style={{
+                              color: ruptura ? "#FDE68A" : "#CBD5E1",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Produto em ruptura/falta
+                          </Text>
+                        </Pressable>
+
+                        {ruptura ? (
+                          <CampoNumero
+                            rotulo="Quantidade em ruptura"
+                            valor={quantidadeRuptura}
+                            onChange={setQuantidadeRuptura}
+                          />
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <CampoNumero
+                          rotulo="Quantidade avariada/devolvida"
+                          valor={quantidadeAvaria}
+                          onChange={setQuantidadeAvaria}
+                        />
+                        <GrupoOpcoes
+                          titulo="Motivo"
+                          opcoes={MOTIVOS_AVARIA}
+                          valor={motivoAvaria}
+                          onChange={setMotivoAvaria}
+                        />
+                        <GrupoOpcoes
+                          titulo="Destino"
+                          opcoes={DESTINOS_AVARIA}
+                          valor={destinoAvaria}
+                          onChange={setDestinoAvaria}
+                        />
+                      </>
+                    )}
+
+                    <TextInput
+                      value={observacaoItem}
+                      onChangeText={setObservacaoItem}
+                      placeholder="Observacao deste produto"
+                      placeholderTextColor="#687386"
+                      editable={!enviando}
+                      style={{
+                        minHeight: 44,
+                        borderWidth: 1,
+                        borderColor: "#38445A",
+                        borderRadius: 8,
+                        paddingHorizontal: 12,
+                        color: "white",
+                        backgroundColor: "#101722",
+                      }}
+                    />
+
+                    <Pressable
+                      onPress={adicionarItemOcorrencia}
+                      disabled={enviando}
+                      style={{
+                        minHeight: 46,
+                        borderRadius: 8,
+                        backgroundColor: "#2F6FED",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <MaterialIcons name="add" size={22} color="white" />
+                      <Text style={{ color: "white", fontWeight: "bold" }}>
+                        Adicionar produto
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+
+                {itensOcorrencia.length > 0 ? (
+                  <View style={{ gap: 8 }}>
+                    <Text style={{ color: "#D7DDE6", fontWeight: "bold" }}>
+                      Produtos adicionados
+                    </Text>
+                    {itensOcorrencia.map((item, indice) => (
+                      <View
+                        key={`${item.produtoId}-${indice}`}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: "#334155",
+                          borderRadius: 8,
+                          backgroundColor: "#101722",
+                          padding: 11,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: "white", fontWeight: "bold" }}>
+                            {item.codigo ? `${item.codigo} - ` : ""}
+                            {item.nome}
+                          </Text>
+                          <Text
+                            style={{
+                              color: "#94A3B8",
+                              fontSize: 12,
+                              paddingTop: 3,
+                            }}
+                          >
+                            {tipoOcorrencia === "avaria"
+                              ? `${item.quantidadeAvaria || 0} un. - ${
+                                  item.destinoAvaria
+                                }`
+                              : `Loja: ${item.estoqueLoja || 0} / Disp.: ${
+                                  item.estoqueDisponivel || 0
+                                }${item.ruptura ? " / Ruptura" : ""}`}
+                          </Text>
+                        </View>
+                        <Pressable
+                          onPress={() => removerItemOcorrencia(indice)}
+                          accessibilityLabel="Remover produto"
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 7,
+                            backgroundColor: "#3A1620",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <MaterialIcons
+                            name="close"
+                            size={20}
+                            color="#FCA5A5"
+                          />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={{ color: "#F4B740", fontSize: 13 }}>
+                    Adicione pelo menos um produto para enviar esta categoria.
+                  </Text>
+                )}
+              </View>
+            ) : null}
           </View>
 
           <View style={{ gap: 12 }}>
@@ -758,6 +1211,91 @@ function LinhaResumo({
         >
           {valor}
         </Text>
+      </View>
+    </View>
+  );
+}
+
+function CampoNumero({
+  rotulo,
+  valor,
+  onChange,
+}: {
+  rotulo: string;
+  valor: string;
+  onChange: (valor: string) => void;
+}) {
+  return (
+    <View style={{ flex: 1, gap: 7 }}>
+      <Text style={{ color: "#CBD5E1", fontWeight: "bold", fontSize: 13 }}>
+        {rotulo}
+      </Text>
+      <TextInput
+        value={valor}
+        onChangeText={onChange}
+        keyboardType="numeric"
+        placeholder="0"
+        placeholderTextColor="#687386"
+        style={{
+          minHeight: 44,
+          borderWidth: 1,
+          borderColor: "#38445A",
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          color: "white",
+          backgroundColor: "#101722",
+        }}
+      />
+    </View>
+  );
+}
+
+function GrupoOpcoes({
+  titulo,
+  opcoes,
+  valor,
+  onChange,
+}: {
+  titulo: string;
+  opcoes: string[];
+  valor: string;
+  onChange: (valor: string) => void;
+}) {
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={{ color: "#CBD5E1", fontWeight: "bold", fontSize: 13 }}>
+        {titulo}
+      </Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {opcoes.map((opcao) => {
+          const ativo = valor === opcao;
+
+          return (
+            <Pressable
+              key={opcao}
+              onPress={() => onChange(opcao)}
+              style={{
+                minHeight: 38,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: ativo ? "#7AA2F7" : "#38445A",
+                backgroundColor: ativo ? "#214D99" : "#101722",
+                paddingHorizontal: 11,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  color: ativo ? "white" : "#CBD5E1",
+                  fontWeight: ativo ? "bold" : "normal",
+                }}
+              >
+                {opcao}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );

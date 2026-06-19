@@ -18,10 +18,13 @@ import {
   updatePassword,
   updateProfile,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 
 import { ROTAS } from "../constants/routes";
-import { auth, db } from "../services/firebaseConfig";
+import { auth } from "../services/firebaseConfig";
+import {
+  atualizarDadosPerfilUsuario,
+  buscarPerfilUsuario,
+} from "../services/usuarios-service";
 
 type PerfilUsuarioProps = {
   tipoEsperado: "promotor" | "admin";
@@ -72,30 +75,29 @@ export default function PerfilUsuario({
         return;
       }
 
-      const usuarioSnap = await getDoc(doc(db, "usuarios", usuarioAtual.uid));
+      const perfil = await buscarPerfilUsuario(usuarioAtual.uid);
 
-      if (!usuarioSnap.exists() || usuarioSnap.data().ativo === false) {
+      if (!perfil || perfil.ativo === false) {
         await signOut(auth);
         router.replace(ROTAS.login);
         return;
       }
 
-      const dados = usuarioSnap.data();
-      const ehAdmin = dados.tipo === "admin" || dados.tipo === "super_admin";
+      const ehAdmin = perfil.tipo === "admin" || perfil.tipo === "super_admin";
 
       if (
         (tipoEsperado === "admin" && !ehAdmin) ||
-        (tipoEsperado === "promotor" && dados.tipo !== "promotor")
+        (tipoEsperado === "promotor" && perfil.tipo !== "promotor")
       ) {
         router.replace(ehAdmin ? ROTAS.admin : ROTAS.promotor);
         return;
       }
 
-      const emailAtual = usuarioAtual.email || dados.email || "";
-      setNome(dados.nome || usuarioAtual.displayName || "");
+      const emailAtual = usuarioAtual.email || perfil.email || "";
+      setNome(perfil.nome || usuarioAtual.displayName || "");
       setEmail(emailAtual);
       setEmailOriginal(emailAtual);
-      setTipo(dados.tipo || "");
+      setTipo(perfil.tipo || "");
     }
 
     carregarPerfil().catch((error) => {
@@ -148,10 +150,9 @@ export default function PerfilUsuario({
       }
 
       await updateProfile(usuarioAtual, { displayName: nomeLimpo });
-      await updateDoc(doc(db, "usuarios", usuarioAtual.uid), {
+      await atualizarDadosPerfilUsuario(usuarioAtual.uid, {
         nome: nomeLimpo,
         email: emailLimpo,
-        atualizadoEm: serverTimestamp(),
       });
 
       setNome(nomeLimpo);
