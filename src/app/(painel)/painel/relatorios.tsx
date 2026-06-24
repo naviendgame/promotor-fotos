@@ -4,26 +4,29 @@ import { ScrollView, Text, View } from "react-native";
 import { onSnapshot } from "firebase/firestore";
 
 import { fotosCollection } from "@/services/fotos-service";
+import { useTheme } from "@/theme/theme-context";
+import type { ThemeColors } from "@/theme/colors";
 import type { Foto } from "@/types/foto";
 import { filtrarFotosAtuais } from "@/utils/fotos";
 
 type LinhaResumoProps = {
+  colors: ThemeColors;
   nome: string;
   valor: number;
   total: number;
   cor: string;
 };
 
-function LinhaResumo({ nome, valor, total, cor }: LinhaResumoProps) {
+function LinhaResumo({ colors, nome, valor, total, cor }: LinhaResumoProps) {
   const percentual = total > 0 ? (valor / total) * 100 : 0;
 
   return (
     <View style={{ gap: 7 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        <Text style={{ color: "#4B586D" }}>{nome}</Text>
+        <Text style={{ color: colors.textMuted }}>{nome}</Text>
         <Text
           style={{
-            color: "#172033",
+            color: colors.text,
             fontWeight: "bold",
             fontVariant: ["tabular-nums"],
           }}
@@ -35,7 +38,7 @@ function LinhaResumo({ nome, valor, total, cor }: LinhaResumoProps) {
         style={{
           height: 8,
           borderRadius: 4,
-          backgroundColor: "#EDF0F5",
+          backgroundColor: colors.surfaceElevated,
           overflow: "hidden",
         }}
       >
@@ -52,6 +55,7 @@ function LinhaResumo({ nome, valor, total, cor }: LinhaResumoProps) {
 }
 
 export default function RelatoriosPainel() {
+  const { colors } = useTheme();
   const [fotos, setFotos] = useState<Foto[]>([]);
 
   useEffect(() => {
@@ -92,7 +96,13 @@ export default function RelatoriosPainel() {
     };
   }, [fotos]);
 
-  const cores = ["#2F6FED", "#168174", "#C46A16", "#7C3AED", "#BA3340"];
+  const cores = [
+    colors.primary,
+    colors.success,
+    colors.warning,
+    "#7C3AED",
+    colors.danger,
+  ];
 
   return (
     <ScrollView
@@ -102,10 +112,10 @@ export default function RelatoriosPainel() {
       contentContainerStyle={{ gap: 18, paddingBottom: 28 }}
     >
       <View>
-        <Text style={{ color: "#172033", fontSize: 27, fontWeight: "bold" }}>
+        <Text style={{ color: colors.text, fontSize: 27, fontWeight: "bold" }}>
           Relatorios
         </Text>
-        <Text style={{ color: "#68758A", paddingTop: 5 }}>
+        <Text style={{ color: colors.textSubtle, paddingTop: 5 }}>
           Consolidado das {fotos.length} fotos registradas
         </Text>
       </View>
@@ -122,16 +132,16 @@ export default function RelatoriosPainel() {
             style={{
               flex: 1,
               minWidth: 330,
-              backgroundColor: "white",
+              backgroundColor: colors.surface,
               borderWidth: 1,
-              borderColor: "#E0E5ED",
+              borderColor: colors.border,
               borderRadius: 8,
               padding: 18,
             }}
           >
             <Text
               style={{
-                color: "#172033",
+                color: colors.text,
                 fontSize: 17,
                 fontWeight: "bold",
                 paddingBottom: 18,
@@ -142,6 +152,7 @@ export default function RelatoriosPainel() {
             <View style={{ gap: 15 }}>
               {grupo.dados.slice(0, 8).map((item, indice) => (
                 <LinhaResumo
+                  colors={colors}
                   key={item.nome}
                   nome={item.nome}
                   valor={item.valor}
@@ -150,7 +161,7 @@ export default function RelatoriosPainel() {
                 />
               ))}
               {grupo.dados.length === 0 ? (
-                <Text style={{ color: "#7A879D" }}>
+                <Text style={{ color: colors.textSubtle }}>
                   Nenhum dado disponivel.
                 </Text>
               ) : null}

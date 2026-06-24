@@ -20,13 +20,15 @@ import {
   excluirFoto as excluirFotoPorId,
 } from "@/services/fotos-service";
 import { atualizarFotoComNotificacao } from "@/services/notificacoes";
+import { useTheme } from "@/theme/theme-context";
+import type { ThemeColors } from "@/theme/colors";
 import type { Foto } from "@/types/foto";
 import { obterData } from "@/utils/datas";
 import {
   filtrarFotosAtuais,
   obterImagemUri as imagemDaFoto,
 } from "@/utils/fotos";
-import { visualStatusWeb as estiloStatus } from "@/utils/status-foto";
+import { visualStatusPorTema } from "@/utils/status-foto";
 
 type AcaoAvaliacao = "refazer" | "rejeitada" | null;
 
@@ -37,6 +39,7 @@ function nomePromotor(foto: Foto) {
 }
 
 export default function FotosWeb() {
+  const { colors, scheme } = useTheme();
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [fotoAberta, setFotoAberta] = useState<Foto | null>(null);
   const [loja, setLoja] = useState("Todas");
@@ -44,8 +47,7 @@ export default function FotosWeb() {
   const [categoria, setCategoria] = useState("Todas");
   const [status, setStatus] = useState("Todos");
   const [comentario, setComentario] = useState("");
-  const [acaoAvaliacao, setAcaoAvaliacao] =
-    useState<AcaoAvaliacao>(null);
+  const [acaoAvaliacao, setAcaoAvaliacao] = useState<AcaoAvaliacao>(null);
   const [mensagemSucesso, setMensagemSucesso] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
@@ -72,7 +74,10 @@ export default function FotosWeb() {
 
   const opcoes = useMemo(
     () => ({
-      lojas: ["Todas", ...new Set(fotos.map((foto) => foto.lojaNome || "Sem loja"))],
+      lojas: [
+        "Todas",
+        ...new Set(fotos.map((foto) => foto.lojaNome || "Sem loja")),
+      ],
       promotores: ["Todos", ...new Set(fotos.map(nomePromotor))],
       categorias: [
         "Todas",
@@ -126,7 +131,10 @@ export default function FotosWeb() {
         setAcaoAvaliacao(null);
       }
     } catch (error: any) {
-      Alert.alert("Erro", error.message || "Nao foi possivel atualizar a foto.");
+      Alert.alert(
+        "Erro",
+        error.message || "Nao foi possivel atualizar a foto.",
+      );
     } finally {
       setSalvando(false);
     }
@@ -189,6 +197,15 @@ export default function FotosWeb() {
     setMensagemSucesso("");
   }
 
+  const botaoIcone = {
+    width: 38,
+    height: 38,
+    borderRadius: 7,
+    backgroundColor: colors.surfaceElevated,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  };
+
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -206,10 +223,12 @@ export default function FotosWeb() {
         }}
       >
         <View>
-          <Text style={{ color: "#172033", fontSize: 27, fontWeight: "bold" }}>
+          <Text
+            style={{ color: colors.text, fontSize: 27, fontWeight: "bold" }}
+          >
             Fotos recebidas
           </Text>
-          <Text style={{ color: "#68758A", paddingTop: 5 }}>
+          <Text style={{ color: colors.textSubtle, paddingTop: 5 }}>
             {fotosFiltradas.length} de {fotos.length} fotos exibidas
           </Text>
         </View>
@@ -217,9 +236,9 @@ export default function FotosWeb() {
 
       <View
         style={{
-          backgroundColor: "white",
+          backgroundColor: colors.surface,
           borderWidth: 1,
-          borderColor: "#E0E5ED",
+          borderColor: colors.border,
           borderRadius: 8,
           padding: 15,
           flexDirection: "row",
@@ -227,26 +246,40 @@ export default function FotosWeb() {
           gap: 12,
         }}
       >
-        <Filtro titulo="Loja" opcoes={opcoes.lojas} valor={loja} onChange={setLoja} />
         <Filtro
+          colors={colors}
+          titulo="Loja"
+          opcoes={opcoes.lojas}
+          valor={loja}
+          onChange={setLoja}
+        />
+        <Filtro
+          colors={colors}
           titulo="Promotor"
           opcoes={opcoes.promotores}
           valor={promotor}
           onChange={setPromotor}
         />
         <Filtro
+          colors={colors}
           titulo="Categoria"
           opcoes={opcoes.categorias}
           valor={categoria}
           onChange={setCategoria}
         />
-        <Filtro titulo="Status" opcoes={statusOpcoes} valor={status} onChange={setStatus} />
+        <Filtro
+          colors={colors}
+          titulo="Status"
+          opcoes={statusOpcoes}
+          valor={status}
+          onChange={setStatus}
+        />
       </View>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", margin: -7 }}>
         {fotosFiltradas.map((foto) => {
           const estado = foto.status || "pendente";
-          const visual = estiloStatus(estado);
+          const visual = visualStatusPorTema(estado, scheme);
           const data = obterData(foto.criadoEm);
 
           return (
@@ -254,9 +287,9 @@ export default function FotosWeb() {
               <Pressable
                 onPress={() => abrirFoto(foto)}
                 style={{
-                  backgroundColor: "white",
+                  backgroundColor: colors.surface,
                   borderWidth: 1,
-                  borderColor: "#DFE4EC",
+                  borderColor: colors.border,
                   borderRadius: 8,
                   overflow: "hidden",
                 }}
@@ -267,7 +300,7 @@ export default function FotosWeb() {
                   style={{
                     width: "100%",
                     aspectRatio: 4 / 3,
-                    backgroundColor: "#E8EBF0",
+                    backgroundColor: colors.surfaceHighlight,
                   }}
                 />
                 <View style={{ padding: 14, gap: 8 }}>
@@ -275,7 +308,7 @@ export default function FotosWeb() {
                     <View
                       style={{
                         alignSelf: "flex-start",
-                        backgroundColor: "#FFF1D9",
+                        backgroundColor: colors.warningSurface,
                         borderRadius: 5,
                         paddingVertical: 5,
                         paddingHorizontal: 8,
@@ -284,10 +317,14 @@ export default function FotosWeb() {
                         gap: 5,
                       }}
                     >
-                      <MaterialIcons name="history" size={15} color="#A6650B" />
+                      <MaterialIcons
+                        name="history"
+                        size={15}
+                        color={colors.warning}
+                      />
                       <Text
                         style={{
-                          color: "#A6650B",
+                          color: colors.warningText,
                           fontSize: 11,
                           fontWeight: "bold",
                         }}
@@ -307,13 +344,21 @@ export default function FotosWeb() {
                     <View style={{ flex: 1 }}>
                       <Text
                         numberOfLines={1}
-                        style={{ color: "#1E2A3E", fontWeight: "bold", fontSize: 15 }}
+                        style={{
+                          color: colors.text,
+                          fontWeight: "bold",
+                          fontSize: 15,
+                        }}
                       >
                         {foto.lojaNome || "Loja nao informada"}
                       </Text>
                       <Text
                         numberOfLines={1}
-                        style={{ color: "#728096", fontSize: 13, paddingTop: 4 }}
+                        style={{
+                          color: colors.textSubtle,
+                          fontSize: 13,
+                          paddingTop: 4,
+                        }}
                       >
                         {nomePromotor(foto)}
                       </Text>
@@ -345,10 +390,10 @@ export default function FotosWeb() {
                       gap: 10,
                     }}
                   >
-                    <Text style={{ color: "#59677D", fontSize: 12 }}>
+                    <Text style={{ color: colors.textMuted, fontSize: 12 }}>
                       {foto.categoria || "Sem categoria"}
                     </Text>
-                    <Text style={{ color: "#8995A8", fontSize: 12 }}>
+                    <Text style={{ color: colors.textSubtle, fontSize: 12 }}>
                       {data ? data.toLocaleDateString("pt-BR") : "Sem data"}
                     </Text>
                   </View>
@@ -362,20 +407,26 @@ export default function FotosWeb() {
       {fotosFiltradas.length === 0 ? (
         <View
           style={{
-            backgroundColor: "white",
+            backgroundColor: colors.surface,
             borderWidth: 1,
-            borderColor: "#E0E5ED",
+            borderColor: colors.border,
             borderRadius: 8,
             padding: 34,
             alignItems: "center",
             gap: 8,
           }}
         >
-          <MaterialIcons name="image-search" size={36} color="#97A3B5" />
-          <Text style={{ color: "#526076", fontWeight: "bold" }}>
+          <MaterialIcons
+            name="image-search"
+            size={36}
+            color={colors.iconMuted}
+          />
+          <Text style={{ color: colors.text, fontWeight: "bold" }}>
             Nenhuma foto encontrada
           </Text>
-          <Text style={{ color: "#8995A8" }}>Altere os filtros para consultar outros envios.</Text>
+          <Text style={{ color: colors.textSubtle }}>
+            Altere os filtros para consultar outros envios.
+          </Text>
         </View>
       ) : null}
 
@@ -388,7 +439,7 @@ export default function FotosWeb() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(20,28,42,0.72)",
+            backgroundColor: colors.overlay,
             alignItems: "center",
             justifyContent: "center",
             padding: 24,
@@ -400,10 +451,12 @@ export default function FotosWeb() {
                 width: "100%",
                 maxWidth: 1180,
                 maxHeight: "92%",
-                backgroundColor: "white",
+                backgroundColor: colors.surface,
                 borderRadius: 8,
                 overflow: "hidden",
                 flexDirection: width >= 900 ? "row" : "column",
+                borderWidth: 1,
+                borderColor: colors.border,
               }}
             >
               <View
@@ -435,10 +488,16 @@ export default function FotosWeb() {
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: "#172033", fontSize: 21, fontWeight: "bold" }}>
+                    <Text
+                      style={{
+                        color: colors.text,
+                        fontSize: 21,
+                        fontWeight: "bold",
+                      }}
+                    >
                       {fotoAberta.lojaNome || "Loja nao informada"}
                     </Text>
-                    <Text style={{ color: "#68758A", paddingTop: 5 }}>
+                    <Text style={{ color: colors.textSubtle, paddingTop: 5 }}>
                       {nomePromotor(fotoAberta)}
                     </Text>
                   </View>
@@ -447,13 +506,22 @@ export default function FotosWeb() {
                     accessibilityLabel="Fechar"
                     style={botaoIcone}
                   >
-                    <MaterialIcons name="close" size={22} color="#526076" />
+                    <MaterialIcons
+                      name="close"
+                      size={22}
+                      color={colors.textMuted}
+                    />
                   </Pressable>
                 </View>
 
                 <View style={{ gap: 7 }}>
-                  <Info titulo="Categoria" valor={fotoAberta.categoria || "Sem categoria"} />
                   <Info
+                    colors={colors}
+                    titulo="Categoria"
+                    valor={fotoAberta.categoria || "Sem categoria"}
+                  />
+                  <Info
+                    colors={colors}
                     titulo="Enviada em"
                     valor={
                       obterData(fotoAberta.criadoEm)?.toLocaleString("pt-BR") ||
@@ -461,11 +529,13 @@ export default function FotosWeb() {
                     }
                   />
                   <Info
+                    colors={colors}
                     titulo="Observacao"
                     valor={fotoAberta.observacao || "Sem observacao"}
                   />
                   {fotoAberta.refacaoDeId ? (
                     <Info
+                      colors={colors}
                       titulo={`Refação ${fotoAberta.numeroRefacao || 1}`}
                       valor={
                         fotoAberta.motivoRefacao ||
@@ -475,33 +545,31 @@ export default function FotosWeb() {
                   ) : null}
                 </View>
 
-                <View
-                  style={{
-                    height: 1,
-                    backgroundColor: "#E4E8EF",
-                  }}
-                />
+                <View style={{ height: 1, backgroundColor: colors.border }} />
 
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                   <Acao
+                    colors={colors}
                     titulo={salvando ? "Salvando..." : "Aprovar"}
                     icone="check-circle"
-                    cor="#24864B"
+                    cor={colors.success}
                     onPress={() => atualizarStatus("aprovada")}
                     disabled={salvando}
                   />
                   <Acao
+                    colors={colors}
                     titulo="Pedir refacao"
                     icone="replay"
-                    cor="#B87312"
+                    cor={colors.warning}
                     onPress={() => selecionarAcao("refazer")}
                     selecionada={acaoAvaliacao === "refazer"}
                     disabled={salvando}
                   />
                   <Acao
+                    colors={colors}
                     titulo="Rejeitar"
                     icone="cancel"
-                    cor="#B5323E"
+                    cor={colors.danger}
                     onPress={() => selecionarAcao("rejeitada")}
                     selecionada={acaoAvaliacao === "rejeitada"}
                     disabled={salvando}
@@ -513,11 +581,15 @@ export default function FotosWeb() {
                     style={{
                       borderWidth: 1,
                       borderColor:
-                        acaoAvaliacao === "refazer" ? "#E0B568" : "#E4A1A8",
+                        acaoAvaliacao === "refazer"
+                          ? colors.warning
+                          : colors.danger,
                       borderRadius: 8,
                       padding: 13,
                       backgroundColor:
-                        acaoAvaliacao === "refazer" ? "#FFF9EF" : "#FFF5F6",
+                        acaoAvaliacao === "refazer"
+                          ? colors.warningSurface
+                          : colors.dangerSurface,
                       gap: 10,
                     }}
                   >
@@ -534,15 +606,17 @@ export default function FotosWeb() {
                         }
                         size={20}
                         color={
-                          acaoAvaliacao === "refazer" ? "#A6650B" : "#B5323E"
+                          acaoAvaliacao === "refazer"
+                            ? colors.warning
+                            : colors.danger
                         }
                       />
                       <Text
                         style={{
                           color:
                             acaoAvaliacao === "refazer"
-                              ? "#7A4B08"
-                              : "#8F2630",
+                              ? colors.warningText
+                              : colors.dangerText,
                           fontWeight: "bold",
                         }}
                       >
@@ -552,7 +626,7 @@ export default function FotosWeb() {
                       </Text>
                     </View>
 
-                    <Text style={{ color: "#68758A", lineHeight: 19 }}>
+                    <Text style={{ color: colors.textMuted, lineHeight: 19 }}>
                       O comentário é opcional e será exibido ao promotor.
                     </Text>
 
@@ -566,15 +640,15 @@ export default function FotosWeb() {
                           ? "Ex.: enquadrar toda a gôndola"
                           : "Ex.: foto não corresponde à loja"
                       }
-                      placeholderTextColor="#9AA5B5"
+                      placeholderTextColor={colors.placeholder}
                       style={{
                         minHeight: 94,
                         borderWidth: 1,
-                        borderColor: "#D5DBE5",
+                        borderColor: colors.border,
                         borderRadius: 7,
                         padding: 11,
-                        backgroundColor: "white",
-                        color: "#172033",
+                        backgroundColor: colors.surface,
+                        color: colors.text,
                         textAlignVertical: "top",
                       }}
                     />
@@ -586,7 +660,9 @@ export default function FotosWeb() {
                         minHeight: 43,
                         borderRadius: 7,
                         backgroundColor:
-                          acaoAvaliacao === "refazer" ? "#B87312" : "#B5323E",
+                          acaoAvaliacao === "refazer"
+                            ? colors.warning
+                            : colors.danger,
                         alignItems: "center",
                         justifyContent: "center",
                         opacity: salvando ? 0.65 : 1,
@@ -608,9 +684,9 @@ export default function FotosWeb() {
                     style={{
                       minHeight: 44,
                       borderRadius: 7,
-                      backgroundColor: "#E5F5EB",
+                      backgroundColor: colors.successSurface,
                       borderWidth: 1,
-                      borderColor: "#A9D8BA",
+                      borderColor: colors.success,
                       paddingHorizontal: 12,
                       flexDirection: "row",
                       alignItems: "center",
@@ -620,9 +696,15 @@ export default function FotosWeb() {
                     <MaterialIcons
                       name="check-circle"
                       size={20}
-                      color="#24864B"
+                      color={colors.success}
                     />
-                    <Text style={{ flex: 1, color: "#247946", fontWeight: "bold" }}>
+                    <Text
+                      style={{
+                        flex: 1,
+                        color: colors.successText,
+                        fontWeight: "bold",
+                      }}
+                    >
                       {mensagemSucesso}
                     </Text>
                   </View>
@@ -630,16 +712,18 @@ export default function FotosWeb() {
 
                 <View style={{ flexDirection: "row", gap: 8 }}>
                   <Acao
+                    colors={colors}
                     titulo="Baixar"
                     icone="download"
-                    cor="#2F6FED"
+                    cor={colors.primary}
                     contorno
                     onPress={baixarFoto}
                   />
                   <Acao
+                    colors={colors}
                     titulo="Excluir"
                     icone="delete-outline"
-                    cor="#B5323E"
+                    cor={colors.danger}
                     contorno
                     onPress={confirmarExclusao}
                   />
@@ -657,7 +741,7 @@ export default function FotosWeb() {
                 bottom: 0,
                 left: 0,
                 zIndex: 50,
-                backgroundColor: "rgba(20,28,42,0.58)",
+                backgroundColor: colors.overlay,
                 alignItems: "center",
                 justifyContent: "center",
                 padding: 22,
@@ -667,10 +751,12 @@ export default function FotosWeb() {
                 style={{
                   width: "100%",
                   maxWidth: 430,
-                  backgroundColor: "white",
+                  backgroundColor: colors.surface,
                   borderRadius: 8,
                   padding: 22,
                   gap: 15,
+                  borderWidth: 1,
+                  borderColor: colors.border,
                 }}
               >
                 <View
@@ -678,7 +764,7 @@ export default function FotosWeb() {
                     width: 44,
                     height: 44,
                     borderRadius: 8,
-                    backgroundColor: "#FBE7E9",
+                    backgroundColor: colors.dangerSurface,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -686,21 +772,21 @@ export default function FotosWeb() {
                   <MaterialIcons
                     name="delete-outline"
                     size={25}
-                    color="#B5323E"
+                    color={colors.danger}
                   />
                 </View>
 
                 <View style={{ gap: 7 }}>
                   <Text
                     style={{
-                      color: "#172033",
+                      color: colors.text,
                       fontSize: 20,
                       fontWeight: "bold",
                     }}
                   >
                     Excluir foto
                   </Text>
-                  <Text style={{ color: "#68758A", lineHeight: 21 }}>
+                  <Text style={{ color: colors.textSubtle, lineHeight: 21 }}>
                     Essa foto sera removida permanentemente e nao podera ser
                     recuperada.
                   </Text>
@@ -720,14 +806,14 @@ export default function FotosWeb() {
                     style={{
                       minHeight: 42,
                       borderWidth: 1,
-                      borderColor: "#D7DDE7",
+                      borderColor: colors.border,
                       borderRadius: 7,
                       paddingHorizontal: 15,
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ color: "#526076", fontWeight: "bold" }}>
+                    <Text style={{ color: colors.textMuted, fontWeight: "bold" }}>
                       Cancelar
                     </Text>
                   </Pressable>
@@ -740,7 +826,9 @@ export default function FotosWeb() {
                       minWidth: 104,
                       borderRadius: 7,
                       paddingHorizontal: 15,
-                      backgroundColor: excluindo ? "#D7838B" : "#B5323E",
+                      backgroundColor: excluindo
+                        ? colors.dangerSurface
+                        : colors.danger,
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -760,37 +848,42 @@ export default function FotosWeb() {
 }
 
 type FiltroProps = {
+  colors: ThemeColors;
   titulo: string;
   opcoes: string[];
   valor: string;
   onChange: (valor: string) => void;
 };
 
-function Filtro({ titulo, opcoes, valor, onChange }: FiltroProps) {
+function Filtro({ colors, titulo, opcoes, valor, onChange }: FiltroProps) {
   const [aberto, setAberto] = useState(false);
 
   return (
     <View style={{ minWidth: 190, flex: 1, maxWidth: 280 }}>
-      <Text style={{ color: "#657189", fontSize: 12, paddingBottom: 6 }}>{titulo}</Text>
+      <Text
+        style={{ color: colors.textSubtle, fontSize: 12, paddingBottom: 6 }}
+      >
+        {titulo}
+      </Text>
       <Pressable
         onPress={() => setAberto((atual) => !atual)}
         style={{
           minHeight: 42,
           borderWidth: 1,
-          borderColor: "#D7DDE7",
+          borderColor: colors.border,
           borderRadius: 7,
           paddingHorizontal: 11,
-          backgroundColor: "#FAFBFC",
+          backgroundColor: colors.backgroundAlt,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 8,
         }}
       >
-        <Text numberOfLines={1} style={{ flex: 1, color: "#34415A" }}>
+        <Text numberOfLines={1} style={{ flex: 1, color: colors.text }}>
           {valor}
         </Text>
-        <MaterialIcons name="expand-more" size={20} color="#738097" />
+        <MaterialIcons name="expand-more" size={20} color={colors.iconMuted} />
       </Pressable>
 
       <Modal
@@ -802,7 +895,7 @@ function Filtro({ titulo, opcoes, valor, onChange }: FiltroProps) {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(20,28,42,0.35)",
+            backgroundColor: colors.overlay,
             alignItems: "center",
             justifyContent: "center",
             padding: 22,
@@ -824,17 +917,18 @@ function Filtro({ titulo, opcoes, valor, onChange }: FiltroProps) {
               width: "100%",
               maxWidth: 420,
               maxHeight: "70%",
-              backgroundColor: "white",
+              backgroundColor: colors.surface,
               borderRadius: 8,
               overflow: "hidden",
-              boxShadow: "0 12px 36px rgba(25, 37, 58, 0.22)",
+              borderWidth: 1,
+              borderColor: colors.border,
             }}
           >
             <View
               style={{
                 minHeight: 58,
                 borderBottomWidth: 1,
-                borderBottomColor: "#E5E9EF",
+                borderBottomColor: colors.border,
                 paddingHorizontal: 17,
                 flexDirection: "row",
                 alignItems: "center",
@@ -842,7 +936,13 @@ function Filtro({ titulo, opcoes, valor, onChange }: FiltroProps) {
                 gap: 10,
               }}
             >
-              <Text style={{ color: "#172033", fontSize: 17, fontWeight: "bold" }}>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 17,
+                  fontWeight: "bold",
+                }}
+              >
                 Filtrar por {titulo.toLowerCase()}
               </Text>
               <Pressable
@@ -852,12 +952,16 @@ function Filtro({ titulo, opcoes, valor, onChange }: FiltroProps) {
                   width: 34,
                   height: 34,
                   borderRadius: 7,
-                  backgroundColor: "#F0F2F6",
+                  backgroundColor: colors.surfaceElevated,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <MaterialIcons name="close" size={20} color="#526076" />
+                <MaterialIcons
+                  name="close"
+                  size={20}
+                  color={colors.textMuted}
+                />
               </Pressable>
             </View>
 
@@ -879,21 +983,27 @@ function Filtro({ titulo, opcoes, valor, onChange }: FiltroProps) {
                       alignItems: "center",
                       justifyContent: "space-between",
                       gap: 10,
-                      backgroundColor: selecionada ? "#EEF3FD" : "white",
+                      backgroundColor: selecionada
+                        ? colors.primarySurface
+                        : colors.surface,
                     }}
                   >
                     <Text
                       numberOfLines={2}
                       style={{
                         flex: 1,
-                        color: selecionada ? "#2F6FED" : "#34415A",
+                        color: selecionada ? colors.primary : colors.text,
                         fontWeight: selecionada ? "bold" : "normal",
                       }}
                     >
                       {opcao}
                     </Text>
                     {selecionada ? (
-                      <MaterialIcons name="check" size={20} color="#2F6FED" />
+                      <MaterialIcons
+                        name="check"
+                        size={20}
+                        color={colors.primary}
+                      />
                     ) : null}
                   </Pressable>
                 );
@@ -906,16 +1016,27 @@ function Filtro({ titulo, opcoes, valor, onChange }: FiltroProps) {
   );
 }
 
-function Info({ titulo, valor }: { titulo: string; valor: string }) {
+function Info({
+  colors,
+  titulo,
+  valor,
+}: {
+  colors: ThemeColors;
+  titulo: string;
+  valor: string;
+}) {
   return (
     <View>
-      <Text style={{ color: "#8995A8", fontSize: 12 }}>{titulo}</Text>
-      <Text style={{ color: "#34415A", paddingTop: 3, lineHeight: 20 }}>{valor}</Text>
+      <Text style={{ color: colors.textSubtle, fontSize: 12 }}>{titulo}</Text>
+      <Text style={{ color: colors.text, paddingTop: 3, lineHeight: 20 }}>
+        {valor}
+      </Text>
     </View>
   );
 }
 
 type AcaoProps = {
+  colors: ThemeColors;
   titulo: string;
   icone: keyof typeof MaterialIcons.glyphMap;
   cor: string;
@@ -926,6 +1047,7 @@ type AcaoProps = {
 };
 
 function Acao({
+  colors,
   titulo,
   icone,
   cor,
@@ -949,7 +1071,8 @@ function Acao({
         alignItems: "center",
         justifyContent: "center",
         gap: 7,
-        backgroundColor: contorno || selecionada ? "white" : cor,
+        backgroundColor:
+          contorno || selecionada ? colors.surface : cor,
         opacity: disabled ? 0.65 : 1,
       }}
     >
@@ -969,12 +1092,3 @@ function Acao({
     </Pressable>
   );
 }
-
-const botaoIcone = {
-  width: 38,
-  height: 38,
-  borderRadius: 7,
-  backgroundColor: "#F0F2F6",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};

@@ -8,6 +8,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import { buscarUsuario } from "@/services/usuarios-service";
+import { useTheme } from "@/theme/theme-context";
 import type { Usuario } from "@/types/usuario";
 
 type PapelPermitido = "promotor" | "admin" | "super_admin";
@@ -36,22 +37,24 @@ function destinoPadrao(perfil: Usuario | null) {
 }
 
 export function TelaCarregandoAuth({
-  backgroundColor = "#121212",
-  color = "#60A5FA",
+  backgroundColor,
+  color,
 }: {
   backgroundColor?: string;
   color?: string;
 }) {
+  const { colors } = useTheme();
+
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor,
+        backgroundColor: backgroundColor ?? colors.background,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <ActivityIndicator size="large" color={color} />
+      <ActivityIndicator size="large" color={color ?? colors.primary} />
     </View>
   );
 }

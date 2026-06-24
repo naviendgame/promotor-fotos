@@ -12,6 +12,8 @@ import { consultaFotosDoPromotor } from "@/services/fotos-service";
 import { buscarLoja } from "@/services/lojas-service";
 import { consultaNotificacoesNaoLidas } from "@/services/notificacoes-service";
 import { buscarUsuario } from "@/services/usuarios-service";
+import { useTheme } from "@/theme/theme-context";
+import type { ThemeColors } from "@/theme/colors";
 import type { Foto } from "@/types/foto";
 import type { Loja } from "@/types/loja";
 import { ehHoje } from "@/utils/datas";
@@ -26,14 +28,15 @@ function textoStatus(status: string) {
   return textoStatusFoto(status);
 }
 
-function corStatus(status: string) {
-  if (status === "aprovada") return "#48C781";
-  if (status === "refazer") return "#F4B740";
-  if (status === "rejeitada") return "#F07480";
-  return "#73A3FF";
+function corStatus(status: string, colors: ThemeColors) {
+  if (status === "aprovada") return colors.success;
+  if (status === "refazer") return colors.warning;
+  if (status === "rejeitada") return colors.danger;
+  return colors.info;
 }
 
 export default function Promotor() {
+  const { colors } = useTheme();
   const [nome, setNome] = useState("");
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [fotos, setFotos] = useState<Foto[]>([]);
@@ -80,14 +83,17 @@ export default function Promotor() {
         );
         setLojas(lojasCarregadas.filter(Boolean) as Loja[]);
 
-        unsubscribeFotos = onSnapshot(consultaFotosDoPromotor(usuarioAtual.uid), (snapshot) => {
-          const lista = snapshot.docs.map((item) => ({
-            id: item.id,
-            ...item.data(),
-          })) as Foto[];
+        unsubscribeFotos = onSnapshot(
+          consultaFotosDoPromotor(usuarioAtual.uid),
+          (snapshot) => {
+            const lista = snapshot.docs.map((item) => ({
+              id: item.id,
+              ...item.data(),
+            })) as Foto[];
 
-          setFotos(ordenarFotosRecentes(lista));
-        });
+            setFotos(ordenarFotosRecentes(lista));
+          },
+        );
       } catch (error) {
         console.log(error);
         Alert.alert("Erro", "Nao foi possivel carregar seus dados.");
@@ -102,9 +108,12 @@ export default function Promotor() {
     const usuarioAtual = auth.currentUser;
     if (!usuarioAtual) return;
 
-    return onSnapshot(consultaNotificacoesNaoLidas(usuarioAtual.uid), (snapshot) => {
-      setNotificacoesNaoLidas(snapshot.size);
-    });
+    return onSnapshot(
+      consultaNotificacoesNaoLidas(usuarioAtual.uid),
+      (snapshot) => {
+        setNotificacoesNaoLidas(snapshot.size);
+      },
+    );
   }, []);
 
   const resumo = useMemo(() => {
@@ -133,9 +142,37 @@ export default function Promotor() {
     });
   }
 
+  const estiloTituloSecao = {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "bold" as const,
+  };
+
+  const estiloBotaoIcone = {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  };
+
+  const estiloEstadoVazio = {
+    minHeight: 105,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 8,
+    padding: 18,
+  };
+
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: "#0F1115" }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{
@@ -154,11 +191,13 @@ export default function Promotor() {
         }}
       >
         <View style={{ flex: 1 }}>
-          <Text style={{ color: "#8E9AAF", fontSize: 14 }}>Bom trabalho,</Text>
+          <Text style={{ color: colors.textSubtle, fontSize: 14 }}>
+            Bom trabalho,
+          </Text>
           <Text
             numberOfLines={1}
             style={{
-              color: "white",
+              color: colors.text,
               fontSize: 27,
               fontWeight: "bold",
               paddingTop: 3,
@@ -180,7 +219,7 @@ export default function Promotor() {
                   : "notifications-none"
               }
               size={24}
-              color="#AFC5F5"
+              color={colors.primary}
             />
             {notificacoesNaoLidas > 0 ? (
               <View
@@ -191,9 +230,9 @@ export default function Promotor() {
                   minWidth: 20,
                   height: 20,
                   borderRadius: 10,
-                  backgroundColor: "#D83A4E",
+                  backgroundColor: colors.danger,
                   borderWidth: 2,
-                  borderColor: "#0F1115",
+                  borderColor: colors.background,
                   alignItems: "center",
                   justifyContent: "center",
                   paddingHorizontal: 4,
@@ -201,7 +240,7 @@ export default function Promotor() {
               >
                 <Text
                   style={{
-                    color: "white",
+                    color: colors.primaryText,
                     fontSize: 10,
                     fontWeight: "bold",
                     fontVariant: ["tabular-nums"],
@@ -218,35 +257,43 @@ export default function Promotor() {
             accessibilityLabel="Abrir perfil"
             style={estiloBotaoIcone}
           >
-            <MaterialIcons name="person-outline" size={25} color="#AFC5F5" />
+            <MaterialIcons
+              name="person-outline"
+              size={25}
+              color={colors.primary}
+            />
           </Pressable>
         </View>
       </View>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         <Indicador
+          colors={colors}
           titulo="Enviadas hoje"
           valor={resumo.hoje}
           icone="photo-camera"
-          cor="#73A3FF"
+          cor={colors.info}
         />
         <Indicador
+          colors={colors}
           titulo="Pendentes"
           valor={resumo.pendentes}
           icone="schedule"
-          cor="#B79AF7"
+          cor={colors.primary}
         />
         <Indicador
+          colors={colors}
           titulo="Aprovadas"
           valor={resumo.aprovadas}
           icone="check-circle-outline"
-          cor="#48C781"
+          cor={colors.success}
         />
         <Indicador
+          colors={colors}
           titulo="Refazer"
           valor={resumo.refazer}
           icone="replay"
-          cor="#F4B740"
+          cor={colors.warning}
           onPress={() => abrirMinhasFotos("refazer")}
         />
       </View>
@@ -255,9 +302,9 @@ export default function Promotor() {
         <Pressable
           onPress={() => abrirMinhasFotos("refazer")}
           style={{
-            backgroundColor: "#3D2D10",
+            backgroundColor: colors.warningSurface,
             borderWidth: 1,
-            borderColor: "#71551B",
+            borderColor: colors.warning,
             borderRadius: 8,
             padding: 14,
             flexDirection: "row",
@@ -265,16 +312,16 @@ export default function Promotor() {
             gap: 11,
           }}
         >
-          <MaterialIcons name="warning-amber" size={25} color="#F4B740" />
+          <MaterialIcons name="warning-amber" size={25} color={colors.warning} />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: "#FCE6A9", fontWeight: "bold" }}>
+            <Text style={{ color: colors.warningText, fontWeight: "bold" }}>
               {resumo.refazer} foto(s) precisam ser refeitas
             </Text>
-            <Text style={{ color: "#CDBD92", paddingTop: 3 }}>
+            <Text style={{ color: colors.warningText, paddingTop: 3, opacity: 0.85 }}>
               Consulte os comentarios do responsavel.
             </Text>
           </View>
-          <MaterialIcons name="chevron-right" size={23} color="#F4B740" />
+          <MaterialIcons name="chevron-right" size={23} color={colors.warning} />
         </Pressable>
       ) : null}
 
@@ -290,12 +337,14 @@ export default function Promotor() {
         </View>
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Atalho
+            colors={colors}
             titulo="Minhas fotos"
             subtitulo={`${resumo.ativas.length} envios`}
             icone="photo-library"
             onPress={() => abrirMinhasFotos()}
           />
           <Atalho
+            colors={colors}
             titulo="Lixeira"
             subtitulo={`${resumo.lixeira} itens`}
             icone="delete-outline"
@@ -308,8 +357,8 @@ export default function Promotor() {
         <Text style={estiloTituloSecao}>Minhas lojas</Text>
         {lojas.length === 0 ? (
           <View style={estiloEstadoVazio}>
-            <MaterialIcons name="store" size={32} color="#687386" />
-            <Text style={{ color: "#8D98AA" }}>
+            <MaterialIcons name="store" size={32} color={colors.iconMuted} />
+            <Text style={{ color: colors.textSubtle }}>
               Nenhuma loja vinculada ao seu usuario.
             </Text>
           </View>
@@ -318,9 +367,9 @@ export default function Promotor() {
             <View
               key={loja.id}
               style={{
-                backgroundColor: "#191C22",
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: "#2B3039",
+                borderColor: colors.border,
                 borderRadius: 8,
                 padding: 15,
                 gap: 13,
@@ -338,21 +387,29 @@ export default function Promotor() {
                     width: 42,
                     height: 42,
                     borderRadius: 8,
-                    backgroundColor: "#253759",
+                    backgroundColor: colors.primarySurface,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <MaterialIcons name="storefront" size={23} color="#8CB1FA" />
+                  <MaterialIcons
+                    name="storefront"
+                    size={23}
+                    color={colors.primary}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     numberOfLines={2}
-                    style={{ color: "white", fontSize: 17, fontWeight: "bold" }}
+                    style={{
+                      color: colors.text,
+                      fontSize: 17,
+                      fontWeight: "bold",
+                    }}
                   >
                     {loja.nome}
                   </Text>
-                  <Text style={{ color: "#8E99AA", paddingTop: 3 }}>
+                  <Text style={{ color: colors.textSubtle, paddingTop: 3 }}>
                     {loja.cidade} - {loja.estado}
                   </Text>
                 </View>
@@ -367,15 +424,19 @@ export default function Promotor() {
                 style={{
                   minHeight: 44,
                   borderRadius: 7,
-                  backgroundColor: "#2F6FED",
+                  backgroundColor: colors.primary,
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 8,
                 }}
               >
-                <MaterialIcons name="add-a-photo" size={20} color="white" />
-                <Text style={{ color: "white", fontWeight: "bold" }}>
+                <MaterialIcons
+                  name="add-a-photo"
+                  size={20}
+                  color={colors.primaryText}
+                />
+                <Text style={{ color: colors.primaryText, fontWeight: "bold" }}>
                   Enviar foto
                 </Text>
               </Pressable>
@@ -394,7 +455,7 @@ export default function Promotor() {
         >
           <Text style={estiloTituloSecao}>Ultimas avaliacoes</Text>
           <Pressable onPress={() => abrirMinhasFotos()}>
-            <Text style={{ color: "#79A4FA", fontWeight: "bold" }}>
+            <Text style={{ color: colors.primary, fontWeight: "bold" }}>
               Ver todas
             </Text>
           </Pressable>
@@ -402,8 +463,8 @@ export default function Promotor() {
 
         {avaliacoesRecentes.length === 0 ? (
           <View style={estiloEstadoVazio}>
-            <MaterialIcons name="fact-check" size={32} color="#687386" />
-            <Text style={{ color: "#8D98AA", textAlign: "center" }}>
+            <MaterialIcons name="fact-check" size={32} color={colors.iconMuted} />
+            <Text style={{ color: colors.textSubtle, textAlign: "center" }}>
               Suas avaliacoes mais recentes aparecerao aqui.
             </Text>
           </View>
@@ -417,9 +478,9 @@ export default function Promotor() {
                 onPress={() => abrirMinhasFotos(status)}
                 style={{
                   minHeight: 66,
-                  backgroundColor: "#191C22",
+                  backgroundColor: colors.surface,
                   borderWidth: 1,
-                  borderColor: "#2B3039",
+                  borderColor: colors.border,
                   borderRadius: 8,
                   padding: 13,
                   flexDirection: "row",
@@ -430,13 +491,13 @@ export default function Promotor() {
                 <View style={{ flex: 1 }}>
                   <Text
                     numberOfLines={1}
-                    style={{ color: "white", fontWeight: "bold" }}
+                    style={{ color: colors.text, fontWeight: "bold" }}
                   >
                     {foto.lojaNome || "Loja nao informada"}
                   </Text>
                   <Text
                     numberOfLines={1}
-                    style={{ color: "#8894A6", paddingTop: 4 }}
+                    style={{ color: colors.textSubtle, paddingTop: 4 }}
                   >
                     {foto.categoria || "Sem categoria"}
                     {foto.comentarioAdmin ? " · possui comentario" : ""}
@@ -444,7 +505,7 @@ export default function Promotor() {
                 </View>
                 <Text
                   style={{
-                    color: corStatus(status),
+                    color: corStatus(status, colors),
                     fontSize: 12,
                     fontWeight: "bold",
                   }}
@@ -454,7 +515,7 @@ export default function Promotor() {
                 <MaterialIcons
                   name="chevron-right"
                   size={22}
-                  color="#667286"
+                  color={colors.iconMuted}
                 />
               </Pressable>
             );
@@ -470,7 +531,7 @@ export default function Promotor() {
         style={{
           minHeight: 46,
           borderWidth: 1,
-          borderColor: "#343A44",
+          borderColor: colors.border,
           borderRadius: 7,
           flexDirection: "row",
           alignItems: "center",
@@ -478,20 +539,24 @@ export default function Promotor() {
           gap: 8,
         }}
       >
-        <MaterialIcons name="logout" size={20} color="#AAB3C0" />
-        <Text style={{ color: "#D2D7DF", fontWeight: "bold" }}>Sair</Text>
+        <MaterialIcons name="logout" size={20} color={colors.textMuted} />
+        <Text style={{ color: colors.textMuted, fontWeight: "bold" }}>
+          Sair
+        </Text>
       </Pressable>
     </ScrollView>
   );
 }
 
 function Indicador({
+  colors,
   titulo,
   valor,
   icone,
   cor,
   onPress,
 }: {
+  colors: ThemeColors;
   titulo: string;
   valor: number;
   icone: keyof typeof MaterialIcons.glyphMap;
@@ -506,9 +571,9 @@ function Indicador({
         width: "48%",
         minHeight: 104,
         flexGrow: 1,
-        backgroundColor: "#191C22",
+        backgroundColor: colors.surface,
         borderWidth: 1,
-        borderColor: "#2B3039",
+        borderColor: colors.border,
         borderRadius: 8,
         padding: 14,
         justifyContent: "space-between",
@@ -521,12 +586,12 @@ function Indicador({
           justifyContent: "space-between",
         }}
       >
-        <Text style={{ color: "#919CAD", fontSize: 13 }}>{titulo}</Text>
+        <Text style={{ color: colors.textSubtle, fontSize: 13 }}>{titulo}</Text>
         <MaterialIcons name={icone} size={21} color={cor} />
       </View>
       <Text
         style={{
-          color: "white",
+          color: colors.text,
           fontSize: 28,
           fontWeight: "bold",
           fontVariant: ["tabular-nums"],
@@ -539,11 +604,13 @@ function Indicador({
 }
 
 function Atalho({
+  colors,
   titulo,
   subtitulo,
   icone,
   onPress,
 }: {
+  colors: ThemeColors;
   titulo: string;
   subtitulo: string;
   icone: keyof typeof MaterialIcons.glyphMap;
@@ -555,49 +622,21 @@ function Atalho({
       style={{
         flex: 1,
         minHeight: 94,
-        backgroundColor: "#191C22",
+        backgroundColor: colors.surface,
         borderWidth: 1,
-        borderColor: "#2B3039",
+        borderColor: colors.border,
         borderRadius: 8,
         padding: 13,
         justifyContent: "space-between",
       }}
     >
-      <MaterialIcons name={icone} size={25} color="#82A9F7" />
+      <MaterialIcons name={icone} size={25} color={colors.primary} />
       <View>
-        <Text style={{ color: "white", fontWeight: "bold" }}>{titulo}</Text>
-        <Text style={{ color: "#818D9F", paddingTop: 3, fontSize: 12 }}>
+        <Text style={{ color: colors.text, fontWeight: "bold" }}>{titulo}</Text>
+        <Text style={{ color: colors.textSubtle, paddingTop: 3, fontSize: 12 }}>
           {subtitulo}
         </Text>
       </View>
     </Pressable>
   );
 }
-
-const estiloTituloSecao = {
-  color: "#F1F4F8",
-  fontSize: 18,
-  fontWeight: "bold" as const,
-};
-
-const estiloBotaoIcone = {
-  width: 44,
-  height: 44,
-  borderRadius: 8,
-  backgroundColor: "#1B1F26",
-  borderWidth: 1,
-  borderColor: "#303640",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
-
-const estiloEstadoVazio = {
-  minHeight: 105,
-  borderWidth: 1,
-  borderColor: "#2B3039",
-  borderRadius: 8,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  gap: 8,
-  padding: 18,
-};

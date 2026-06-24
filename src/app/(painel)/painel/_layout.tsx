@@ -12,7 +12,7 @@ export default function PainelLayout() {
   });
 
   if (carregando || !perfil) {
-    return <TelaCarregandoAuth backgroundColor="#F3F5F8" color="#2F6FED" />;
+    return <TelaCarregandoAuth />;
   }
 
   const tipoUsuario =

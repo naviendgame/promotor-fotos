@@ -19,6 +19,7 @@ export const ROTAS = {
   enviarFoto: "/enviar_foto",
   minhasFotos: "/minhas_fotos",
   notificacoes: "/notificacoes",
+  notificacoesAdmin: "/notificacoes_admin",
   perfilAdmin: "/perfil_admin",
   perfilPromotor: "/perfil_promotor",
   cadastroAdmin: "/cadastro_admin",

@@ -19,20 +19,18 @@ import {
   criarUsuario,
   excluirUsuario,
 } from "@/services/usuarios-service";
+import { useTheme } from "@/theme/theme-context";
+import type { ThemeColors } from "@/theme/colors";
 import type { Loja } from "@/types/loja";
 import type { Promotor } from "@/types/usuario";
+
 import {
   Cabecalho,
   Campo,
   CampoBusca,
   FormularioModal,
   Vazio,
-  cabecalhoTabela,
-  celula,
-  celulaCabecalho,
-  iconeLinha,
-  linhaTabela,
-  tabela,
+  useEstilosPainel,
 } from "./lojas";
 
 type PromotorWebItem = Promotor & {
@@ -41,6 +39,8 @@ type PromotorWebItem = Promotor & {
 };
 
 export default function PromotoresWeb() {
+  const estilos = useEstilosPainel();
+  const { colors } = estilos;
   const [promotores, setPromotores] = useState<PromotorWebItem[]>([]);
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [busca, setBusca] = useState("");
@@ -54,14 +54,25 @@ export default function PromotoresWeb() {
 
   useEffect(() => {
     const unsubUsuarios = onSnapshot(consultaPromotores(), (snapshot) => {
-      const lista = snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) as PromotorWebItem[];
+      const lista = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      })) as PromotorWebItem[];
       lista.sort((a, b) => a.nome.localeCompare(b.nome));
       setPromotores(lista);
     });
     const unsubLojas = onSnapshot(lojasCollection(), (snapshot) => {
-      setLojas(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) as Loja[]);
+      setLojas(
+        snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        })) as Loja[],
+      );
     });
-    return () => { unsubUsuarios(); unsubLojas(); };
+    return () => {
+      unsubUsuarios();
+      unsubLojas();
+    };
   }, []);
 
   const filtrados = useMemo(() => {
@@ -74,7 +85,9 @@ export default function PromotoresWeb() {
 
   function alternarLoja(id: string) {
     setSelecionadas((atuais) =>
-      atuais.includes(id) ? atuais.filter((item) => item !== id) : [...atuais, id],
+      atuais.includes(id)
+        ? atuais.filter((item) => item !== id)
+        : [...atuais, id],
     );
   }
 
@@ -101,8 +114,16 @@ export default function PromotoresWeb() {
   }
 
   async function cadastrar() {
-    if (!nome.trim() || !email.trim() || senha.length < 6 || selecionadas.length === 0) {
-      Alert.alert("Atencao", "Preencha os dados, uma senha de 6 caracteres e selecione uma loja.");
+    if (
+      !nome.trim() ||
+      !email.trim() ||
+      senha.length < 6 ||
+      selecionadas.length === 0
+    ) {
+      Alert.alert(
+        "Atencao",
+        "Preencha os dados, uma senha de 6 caracteres e selecione uma loja.",
+      );
       return;
     }
     setSalvando(true);
@@ -117,7 +138,11 @@ export default function PromotoresWeb() {
         lojasIds: selecionadas,
         criadoEm: serverTimestamp(),
       });
-      setNome(""); setEmail(""); setSenha(""); setSelecionadas([]); setNovoAberto(false);
+      setNome("");
+      setEmail("");
+      setSenha("");
+      setSelecionadas([]);
+      setNovoAberto(false);
     } catch (error: any) {
       Alert.alert("Erro", error.message || "Nao foi possivel cadastrar.");
     } finally {
@@ -133,18 +158,32 @@ export default function PromotoresWeb() {
   }
 
   async function excluir(item: PromotorWebItem) {
-    if (!globalThis.confirm(`Excluir o cadastro de ${item.nome}? As fotos serao preservadas.`)) return;
+    if (
+      !globalThis.confirm(
+        `Excluir o cadastro de ${item.nome}? As fotos serao preservadas.`,
+      )
+    )
+      return;
     await excluirUsuario(item.id);
-    globalThis.alert(`Cadastro removido. Exclua tambem a credencial de ${item.email} no Firebase Authentication.`);
+    globalThis.alert(
+      `Cadastro removido. Exclua tambem a credencial de ${item.email} no Firebase Authentication.`,
+    );
   }
 
   function nomesLojas(item: PromotorWebItem) {
-    return lojas.filter((loja) => item.lojasIds?.includes(loja.id)).map((loja) => loja.nome).join(", ") || "Nenhuma loja";
+    return (
+      lojas
+        .filter((loja) => item.lojasIds?.includes(loja.id))
+        .map((loja) => loja.nome)
+        .join(", ") || "Nenhuma loja"
+    );
   }
 
   const seletorLojas = (
     <View style={{ gap: 8 }}>
-      <Text style={{ color: "#4B586D", fontWeight: "bold" }}>Lojas permitidas</Text>
+      <Text style={{ color: colors.textMuted, fontWeight: "bold" }}>
+        Lojas permitidas
+      </Text>
       {lojas.map((loja) => {
         const ativa = selecionadas.includes(loja.id);
         return (
@@ -152,13 +191,30 @@ export default function PromotoresWeb() {
             key={loja.id}
             onPress={() => alternarLoja(loja.id)}
             style={{
-              minHeight: 44, borderWidth: 1, borderColor: ativa ? "#2563EB" : "#D6E0F0",
-              borderRadius: 8, backgroundColor: ativa ? "#EAF1FF" : "white",
-              paddingHorizontal: 11, flexDirection: "row", alignItems: "center", gap: 9,
+              minHeight: 44,
+              borderWidth: 1,
+              borderColor: ativa ? colors.primary : colors.border,
+              borderRadius: 8,
+              backgroundColor: ativa ? colors.primarySurface : colors.surface,
+              paddingHorizontal: 11,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 9,
             }}
           >
-            <MaterialIcons name={ativa ? "check-box" : "check-box-outline-blank"} size={21} color={ativa ? "#2563EB" : "#8A96A9"} />
-            <Text style={{ color: "#34415A", fontWeight: ativa ? "bold" : "normal" }}>{loja.nome}</Text>
+            <MaterialIcons
+              name={ativa ? "check-box" : "check-box-outline-blank"}
+              size={21}
+              color={ativa ? colors.primary : colors.iconMuted}
+            />
+            <Text
+              style={{
+                color: ativa ? colors.primary : colors.text,
+                fontWeight: ativa ? "bold" : "normal",
+              }}
+            >
+              {loja.nome}
+            </Text>
           </Pressable>
         );
       })}
@@ -166,19 +222,35 @@ export default function PromotoresWeb() {
   );
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 18, paddingBottom: 28 }}>
-      <Cabecalho titulo="Promotores" subtitulo={`${promotores.length} profissionais cadastrados`} botao="Novo promotor" icone="person-add" onPress={() => { setSelecionadas([]); setNovoAberto(true); }} />
-      <CampoBusca valor={busca} onChange={setBusca} placeholder="Buscar por nome ou email" />
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ gap: 18, paddingBottom: 28 }}
+    >
+      <Cabecalho
+        titulo="Promotores"
+        subtitulo={`${promotores.length} profissionais cadastrados`}
+        botao="Novo promotor"
+        icone="person-add"
+        onPress={() => {
+          setSelecionadas([]);
+          setNovoAberto(true);
+        }}
+      />
+      <CampoBusca
+        valor={busca}
+        onChange={setBusca}
+        placeholder="Buscar por nome ou email"
+      />
       <Animated.View
         entering={FadeInUp.duration(260)}
         layout={LinearTransition.duration(180)}
-        style={tabela}
+        style={estilos.tabela}
       >
-        <View style={cabecalhoTabela}>
-          <Text style={[celulaCabecalho, { flex: 1.4 }]}>PROMOTOR</Text>
-          <Text style={[celulaCabecalho, { flex: 1.5 }]}>LOJAS</Text>
-          <Text style={[celulaCabecalho, { flex: 0.55 }]}>STATUS</Text>
-          <Text style={[celulaCabecalho, { flex: 0.8 }]}>ACOES</Text>
+        <View style={estilos.cabecalhoTabela}>
+          <Text style={[estilos.celulaCabecalho, { flex: 1.4 }]}>PROMOTOR</Text>
+          <Text style={[estilos.celulaCabecalho, { flex: 1.5 }]}>LOJAS</Text>
+          <Text style={[estilos.celulaCabecalho, { flex: 0.55 }]}>STATUS</Text>
+          <Text style={[estilos.celulaCabecalho, { flex: 0.8 }]}>ACOES</Text>
         </View>
         {filtrados.map((item, indice) => {
           const ativo = item.ativo !== false;
@@ -188,49 +260,141 @@ export default function PromotoresWeb() {
               entering={FadeInUp.duration(220).delay(indice * 35)}
               layout={LinearTransition.duration(160)}
               style={[
-                linhaTabela,
+                estilos.linhaTabela,
                 { borderBottomWidth: indice < filtrados.length - 1 ? 1 : 0 },
               ]}
             >
-              <View style={{ flex: 1.4, flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <View style={iconeLinha}><MaterialIcons name="person" size={19} color="#2F6FED" /></View>
+              <View
+                style={{
+                  flex: 1.4,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <View style={estilos.iconeLinha}>
+                  <MaterialIcons name="person" size={19} color={colors.primary} />
+                </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: "#263247", fontWeight: "bold" }}>{item.nome}</Text>
-                  <Text style={{ color: "#7A879D", fontSize: 12, paddingTop: 3 }}>{item.email}</Text>
+                  <Text style={{ color: colors.text, fontWeight: "bold" }}>
+                    {item.nome}
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.textSubtle,
+                      fontSize: 12,
+                      paddingTop: 3,
+                    }}
+                  >
+                    {item.email}
+                  </Text>
                 </View>
               </View>
-              <Text numberOfLines={2} style={[celula, { flex: 1.5 }]}>{nomesLojas(item)}</Text>
+              <Text
+                numberOfLines={2}
+                style={[estilos.celula, { flex: 1.5 }]}
+              >
+                {nomesLojas(item)}
+              </Text>
               <View style={{ flex: 0.55 }}>
-                <Text style={{ alignSelf: "flex-start", color: ativo ? "#247946" : "#B5323E", backgroundColor: ativo ? "#E4F4EA" : "#FBE7E9", borderRadius: 5, paddingVertical: 5, paddingHorizontal: 8, fontSize: 12, fontWeight: "bold" }}>{ativo ? "Ativo" : "Inativo"}</Text>
+                <Text style={ativo ? estilos.badgeAtivo : estilos.badgeInativo}>
+                  {ativo ? "Ativo" : "Inativo"}
+                </Text>
               </View>
               <View style={{ flex: 0.8, flexDirection: "row", gap: 6 }}>
-                <IconeAcao icone="store" titulo="Alterar lojas" onPress={() => abrirEdicao(item)} />
-                <IconeAcao icone={ativo ? "block" : "check-circle"} titulo={ativo ? "Desativar" : "Reativar"} onPress={() => alternarAcesso(item)} />
-                <IconeAcao icone="delete-outline" titulo="Excluir" perigo onPress={() => excluir(item)} />
+                <IconeAcao
+                  colors={colors}
+                  icone="store"
+                  titulo="Alterar lojas"
+                  onPress={() => abrirEdicao(item)}
+                />
+                <IconeAcao
+                  colors={colors}
+                  icone={ativo ? "block" : "check-circle"}
+                  titulo={ativo ? "Desativar" : "Reativar"}
+                  onPress={() => alternarAcesso(item)}
+                />
+                <IconeAcao
+                  colors={colors}
+                  icone="delete-outline"
+                  titulo="Excluir"
+                  perigo
+                  onPress={() => excluir(item)}
+                />
               </View>
             </Animated.View>
           );
         })}
-        {filtrados.length === 0 ? <Vazio texto="Nenhum promotor encontrado." /> : null}
+        {filtrados.length === 0 ? (
+          <Vazio texto="Nenhum promotor encontrado." />
+        ) : null}
       </Animated.View>
 
-      <FormularioModal visivel={novoAberto} titulo="Cadastrar promotor" onClose={() => setNovoAberto(false)} onSave={cadastrar} salvando={salvando}>
+      <FormularioModal
+        visivel={novoAberto}
+        titulo="Cadastrar promotor"
+        onClose={() => setNovoAberto(false)}
+        onSave={cadastrar}
+        salvando={salvando}
+      >
         <Campo rotulo="Nome completo" valor={nome} onChange={setNome} />
         <Campo rotulo="Email" valor={email} onChange={setEmail} />
-        <Campo rotulo="Senha provisoria" valor={senha} onChange={setSenha} secureTextEntry />
+        <Campo
+          rotulo="Senha provisoria"
+          valor={senha}
+          onChange={setSenha}
+          secureTextEntry
+        />
         {seletorLojas}
       </FormularioModal>
-      <FormularioModal visivel={!!editado} titulo={`Lojas de ${editado?.nome || ""}`} onClose={() => setEditado(null)} onSave={salvarLojas} salvando={salvando}>
+      <FormularioModal
+        visivel={!!editado}
+        titulo={`Lojas de ${editado?.nome || ""}`}
+        onClose={() => setEditado(null)}
+        onSave={salvarLojas}
+        salvando={salvando}
+      >
         {seletorLojas}
       </FormularioModal>
     </ScrollView>
   );
 }
 
-function IconeAcao({ icone, titulo, onPress, perigo }: { icone: keyof typeof MaterialIcons.glyphMap; titulo: string; onPress: () => void; perigo?: boolean }) {
+function IconeAcao({
+  colors,
+  icone,
+  titulo,
+  onPress,
+  perigo,
+}: {
+  colors: ThemeColors;
+  icone: keyof typeof MaterialIcons.glyphMap;
+  titulo: string;
+  onPress: () => void;
+  perigo?: boolean;
+}) {
   return (
-    <Pressable onPress={onPress} accessibilityLabel={titulo} style={{ width: 34, height: 34, borderRadius: 7, borderWidth: 1, borderColor: perigo ? "#F0C8CC" : "#D6E0F0", backgroundColor: perigo ? "#FFF5F6" : "#F8FAFF", alignItems: "center", justifyContent: "center" }}>
-      <MaterialIcons name={icone} size={18} color={perigo ? "#B5323E" : "#526076"} />
+    <Pressable
+      onPress={onPress}
+      accessibilityLabel={titulo}
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: 7,
+        borderWidth: 1,
+        borderColor: perigo ? colors.danger : colors.border,
+        backgroundColor: perigo
+          ? colors.dangerSurface
+          : colors.surfaceElevated,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <MaterialIcons
+        name={icone}
+        size={18}
+        color={perigo ? colors.danger : colors.textMuted}
+      />
     </Pressable>
   );
 }
