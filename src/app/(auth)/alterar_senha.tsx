@@ -10,8 +10,10 @@ import {
   atualizarUsuario,
   buscarUsuario,
 } from "@/services/usuarios-service";
+import { useTheme } from "@/theme/theme-context";
 
 export default function AlterarSenha() {
+  const { colors } = useTheme();
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
 
@@ -65,14 +67,14 @@ export default function AlterarSenha() {
     <View
       style={{
         flex: 1,
-        backgroundColor: "#121212",
+        backgroundColor: colors.background,
         justifyContent: "center",
         padding: 20,
       }}
     >
       <Text
         style={{
-          color: "white",
+          color: colors.text,
           fontSize: 28,
           fontWeight: "bold",
           textAlign: "center",
@@ -84,7 +86,7 @@ export default function AlterarSenha() {
 
       <Text
         style={{
-          color: "#aaa",
+          color: colors.textSubtle,
           textAlign: "center",
           marginBottom: 30,
         }}
@@ -97,29 +99,30 @@ export default function AlterarSenha() {
           flexDirection: "row",
           alignItems: "center",
           borderWidth: 1,
-          borderColor: "#444",
+          borderColor: colors.border,
           borderRadius: 8,
           marginBottom: 15,
           paddingHorizontal: 12,
+          backgroundColor: colors.surface,
         }}
       >
         <TextInput
           placeholder="Nova senha"
-          placeholderTextColor="#888"
+          placeholderTextColor={colors.placeholder}
           value={novaSenha}
           onChangeText={setNovaSenha}
           secureTextEntry={!mostrarSenha}
           style={{
             flex: 1,
             paddingVertical: 12,
-            color: "white",
+            color: colors.text,
           }}
         />
 
         <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
           <Text
             style={{
-              color: "#60A5FA",
+              color: colors.info,
               fontSize: 18,
             }}
           >
@@ -133,22 +136,23 @@ export default function AlterarSenha() {
           flexDirection: "row",
           alignItems: "center",
           borderWidth: 1,
-          borderColor: "#444",
+          borderColor: colors.border,
           borderRadius: 8,
           marginBottom: 20,
           paddingHorizontal: 12,
+          backgroundColor: colors.surface,
         }}
       >
         <TextInput
           placeholder="Confirmar senha"
-          placeholderTextColor="#888"
+          placeholderTextColor={colors.placeholder}
           value={confirmarSenha}
           onChangeText={setConfirmarSenha}
           secureTextEntry={!mostrarConfirmacao}
           style={{
             flex: 1,
             paddingVertical: 12,
-            color: "white",
+            color: colors.text,
           }}
         />
 
@@ -157,7 +161,7 @@ export default function AlterarSenha() {
         >
           <Text
             style={{
-              color: "#60A5FA",
+              color: colors.info,
               fontSize: 18,
             }}
           >
@@ -169,14 +173,14 @@ export default function AlterarSenha() {
       <TouchableOpacity
         onPress={salvarNovaSenha}
         style={{
-          backgroundColor: "#2563EB",
+          backgroundColor: colors.primary,
           padding: 15,
           borderRadius: 10,
         }}
       >
         <Text
           style={{
-            color: "white",
+            color: colors.primaryText,
             textAlign: "center",
             fontWeight: "bold",
           }}

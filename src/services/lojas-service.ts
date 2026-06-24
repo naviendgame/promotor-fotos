@@ -1,4 +1,11 @@
-import { addDoc, collection, doc, getDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  updateDoc,
+} from "firebase/firestore";
 
 import { db } from "./firebaseConfig";
 import type { Loja } from "../types/loja";
@@ -17,4 +24,12 @@ export function buscarLoja(lojaId: string) {
 
 export function criarLoja(dados: Omit<Loja, "id">) {
   return addDoc(lojasCollection(), dados);
+}
+
+export function atualizarLoja(lojaId: string, dados: Partial<Loja>) {
+  return updateDoc(lojaDoc(lojaId), dados as Record<string, any>);
+}
+
+export function excluirLoja(lojaId: string) {
+  return deleteDoc(lojaDoc(lojaId));
 }

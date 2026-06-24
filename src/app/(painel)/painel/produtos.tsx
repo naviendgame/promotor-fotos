@@ -16,6 +16,8 @@ import {
   consultaProdutosOrdenados,
   criarProduto,
 } from "@/services/produtos-service";
+import { useTheme } from "@/theme/theme-context";
+import type { ThemeColors } from "@/theme/colors";
 import type { Produto } from "@/types/produto";
 
 import {
@@ -24,12 +26,7 @@ import {
   CampoBusca,
   FormularioModal,
   Vazio,
-  cabecalhoTabela,
-  celula,
-  celulaCabecalho,
-  iconeLinha,
-  linhaTabela,
-  tabela,
+  useEstilosPainel,
 } from "./lojas";
 
 type ProdutoForm = {
@@ -51,6 +48,8 @@ const FORMULARIO_VAZIO: ProdutoForm = {
 };
 
 export default function ProdutosPainel() {
+  const estilos = useEstilosPainel();
+  const { colors } = estilos;
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [busca, setBusca] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
@@ -183,14 +182,14 @@ export default function ProdutosPainel() {
       <Animated.View
         entering={FadeInUp.duration(260)}
         layout={LinearTransition.duration(180)}
-        style={tabela}
+        style={estilos.tabela}
       >
-        <View style={cabecalhoTabela}>
-          <Text style={[celulaCabecalho, { flex: 0.7 }]}>CODIGO</Text>
-          <Text style={[celulaCabecalho, { flex: 1.5 }]}>PRODUTO</Text>
-          <Text style={celulaCabecalho}>FORNECEDOR</Text>
-          <Text style={[celulaCabecalho, { flex: 0.6 }]}>STATUS</Text>
-          <Text style={[celulaCabecalho, { flex: 0.8 }]}>ACOES</Text>
+        <View style={estilos.cabecalhoTabela}>
+          <Text style={[estilos.celulaCabecalho, { flex: 0.7 }]}>CODIGO</Text>
+          <Text style={[estilos.celulaCabecalho, { flex: 1.5 }]}>PRODUTO</Text>
+          <Text style={estilos.celulaCabecalho}>FORNECEDOR</Text>
+          <Text style={[estilos.celulaCabecalho, { flex: 0.6 }]}>STATUS</Text>
+          <Text style={[estilos.celulaCabecalho, { flex: 0.8 }]}>ACOES</Text>
         </View>
 
         {filtrados.map((produto, indice) => {
@@ -202,11 +201,11 @@ export default function ProdutosPainel() {
               entering={FadeInUp.duration(220).delay(indice * 30)}
               layout={LinearTransition.duration(160)}
               style={[
-                linhaTabela,
+                estilos.linhaTabela,
                 { borderBottomWidth: indice < filtrados.length - 1 ? 1 : 0 },
               ]}
             >
-              <Text selectable style={[celula, { flex: 0.7 }]}>
+              <Text selectable style={[estilos.celula, { flex: 0.7 }]}>
                 {produto.codigo || "-"}
               </Text>
               <View
@@ -217,48 +216,45 @@ export default function ProdutosPainel() {
                   gap: 10,
                 }}
               >
-                <View style={iconeLinha}>
+                <View style={estilos.iconeLinha}>
                   <MaterialIcons
                     name="inventory-2"
                     size={19}
-                    color="#2F6FED"
+                    color={colors.primary}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: "#263247", fontWeight: "bold" }}>
+                  <Text style={{ color: colors.text, fontWeight: "bold" }}>
                     {produto.nome}
                   </Text>
-                  <Text style={{ color: "#7A879D", fontSize: 12, paddingTop: 3 }}>
+                  <Text
+                    style={{
+                      color: colors.textSubtle,
+                      fontSize: 12,
+                      paddingTop: 3,
+                    }}
+                  >
                     {produto.complemento || produto.marca || "Sem complemento"}
                   </Text>
                 </View>
               </View>
-              <Text numberOfLines={2} style={celula}>
+              <Text numberOfLines={2} style={estilos.celula}>
                 {produto.fornecedor || "-"}
               </Text>
               <View style={{ flex: 0.6 }}>
-                <Text
-                  style={{
-                    alignSelf: "flex-start",
-                    color: ativo ? "#247946" : "#B5323E",
-                    backgroundColor: ativo ? "#E4F4EA" : "#FBE7E9",
-                    borderRadius: 5,
-                    paddingVertical: 5,
-                    paddingHorizontal: 8,
-                    fontSize: 12,
-                    fontWeight: "bold",
-                  }}
-                >
+                <Text style={ativo ? estilos.badgeAtivo : estilos.badgeInativo}>
                   {ativo ? "Ativo" : "Inativo"}
                 </Text>
               </View>
               <View style={{ flex: 0.8, flexDirection: "row", gap: 6 }}>
                 <IconeAcao
+                  colors={colors}
                   icone="edit"
                   titulo="Editar produto"
                   onPress={() => abrirEdicao(produto)}
                 />
                 <IconeAcao
+                  colors={colors}
                   icone={ativo ? "block" : "check-circle"}
                   titulo={ativo ? "Desativar" : "Reativar"}
                   onPress={() => alternarAtivo(produto)}
@@ -316,13 +312,17 @@ export default function ProdutosPainel() {
 }
 
 function IconeAcao({
+  colors,
   icone,
   titulo,
   onPress,
+  perigo,
 }: {
+  colors: ThemeColors;
   icone: keyof typeof MaterialIcons.glyphMap;
   titulo: string;
   onPress: () => void;
+  perigo?: boolean;
 }) {
   return (
     <Pressable
@@ -333,13 +333,19 @@ function IconeAcao({
         height: 34,
         borderRadius: 7,
         borderWidth: 1,
-        borderColor: "#D6E0F0",
-        backgroundColor: "#F8FAFF",
+        borderColor: perigo ? colors.danger : colors.border,
+        backgroundColor: perigo
+          ? colors.dangerSurface
+          : colors.surfaceElevated,
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <MaterialIcons name={icone} size={18} color="#526076" />
+      <MaterialIcons
+        name={icone}
+        size={18}
+        color={perigo ? colors.danger : colors.textMuted}
+      />
     </Pressable>
   );
 }

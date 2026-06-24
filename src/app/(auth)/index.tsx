@@ -11,8 +11,10 @@ import {
 import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import { buscarUsuario } from "@/services/usuarios-service";
+import { useTheme } from "@/theme/theme-context";
 
 export default function Home() {
+  const { colors } = useTheme();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -95,7 +97,7 @@ export default function Home() {
         flex: 1,
         justifyContent: "center",
         padding: 20,
-        backgroundColor: "#121212",
+        backgroundColor: colors.background,
       }}
     >
       <Text
@@ -104,7 +106,7 @@ export default function Home() {
           fontWeight: "bold",
           marginBottom: 30,
           textAlign: "center",
-          color: "white",
+          color: colors.text,
         }}
       >
         Promotor Fotos
@@ -112,18 +114,19 @@ export default function Home() {
 
       <TextInput
         placeholder="Email"
-        placeholderTextColor="#888"
+        placeholderTextColor={colors.placeholder}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
         style={{
           borderWidth: 1,
-          borderColor: "#444",
+          borderColor: colors.border,
           borderRadius: 8,
           padding: 12,
           marginBottom: 15,
-          color: "white",
+          color: colors.text,
+          backgroundColor: colors.surface,
         }}
       />
 
@@ -132,29 +135,30 @@ export default function Home() {
           flexDirection: "row",
           alignItems: "center",
           borderWidth: 1,
-          borderColor: "#444",
+          borderColor: colors.border,
           borderRadius: 8,
           marginBottom: 20,
           paddingHorizontal: 12,
+          backgroundColor: colors.surface,
         }}
       >
         <TextInput
           placeholder="Senha"
-          placeholderTextColor="#888"
+          placeholderTextColor={colors.placeholder}
           value={senha}
           onChangeText={setSenha}
           secureTextEntry={!mostrarSenha}
           style={{
             flex: 1,
             paddingVertical: 12,
-            color: "white",
+            color: colors.text,
           }}
         />
 
         <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)}>
           <Text
             style={{
-              color: "#60A5FA",
+              color: colors.info,
               fontSize: 18,
             }}
           >
@@ -166,14 +170,14 @@ export default function Home() {
       <TouchableOpacity
         onPress={fazerLogin}
         style={{
-          backgroundColor: "#2563EB",
+          backgroundColor: colors.primary,
           padding: 15,
           borderRadius: 8,
         }}
       >
         <Text
           style={{
-            color: "white",
+            color: colors.primaryText,
             textAlign: "center",
             fontWeight: "bold",
           }}
@@ -190,7 +194,7 @@ export default function Home() {
       >
         <Text
           style={{
-            color: "#60A5FA",
+            color: colors.info,
             textAlign: "center",
             fontWeight: "bold",
           }}

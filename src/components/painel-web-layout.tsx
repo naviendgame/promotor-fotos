@@ -16,6 +16,7 @@ import Animated, {
 
 import { ROTAS } from "../constants/routes";
 import { auth } from "../services/firebaseConfig";
+import { useTheme } from "../theme/theme-context";
 
 type TipoUsuario = "admin" | "super_admin";
 
@@ -53,6 +54,7 @@ export default function PainelWebLayout({
   nomeUsuario,
   tipoUsuario,
 }: PainelWebLayoutProps) {
+  const { colors, scheme } = useTheme();
   const pathname = usePathname();
   const { width } = useWindowDimensions();
   const compacto = width < 760;
@@ -66,19 +68,28 @@ export default function PainelWebLayout({
     (item) => !item.apenasSuperAdmin || tipoUsuario === "super_admin",
   );
 
+  const sombraCabecalho =
+    scheme === "light"
+      ? "0 8px 24px rgba(37, 99, 235, 0.08)"
+      : "0 8px 24px rgba(0, 0, 0, 0.4)";
+  const sombraBotaoAtivo =
+    scheme === "light"
+      ? "0 8px 18px rgba(37, 99, 235, 0.22)"
+      : "0 8px 18px rgba(47, 111, 237, 0.45)";
+
   return (
-    <View style={{ flex: 1, backgroundColor: "#F4F7FB" }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Animated.View
         entering={FadeInDown.duration(240)}
         style={{
-          backgroundColor: "white",
+          backgroundColor: colors.surface,
           borderBottomWidth: 1,
-          borderBottomColor: "#DDE6F3",
+          borderBottomColor: colors.border,
           paddingHorizontal: compacto ? 16 : 28,
           paddingTop: 16,
           paddingBottom: 12,
           gap: 14,
-          boxShadow: "0 8px 24px rgba(37, 99, 235, 0.08)",
+          boxShadow: sombraCabecalho,
         }}
       >
         <View
@@ -103,7 +114,7 @@ export default function PainelWebLayout({
                 width: 42,
                 height: 42,
                 borderRadius: 8,
-                backgroundColor: "#2563EB",
+                backgroundColor: colors.primary,
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -111,10 +122,22 @@ export default function PainelWebLayout({
               <MaterialIcons name="photo-camera" size={22} color="white" />
             </View>
             <View>
-              <Text style={{ color: "#172033", fontSize: 18, fontWeight: "bold" }}>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 18,
+                  fontWeight: "bold",
+                }}
+              >
                 Promotor Fotos
               </Text>
-              <Text style={{ color: "#64748B", fontSize: 12, paddingTop: 2 }}>
+              <Text
+                style={{
+                  color: colors.textSubtle,
+                  fontSize: 12,
+                  paddingTop: 2,
+                }}
+              >
                 Operacao e acompanhamento
               </Text>
             </View>
@@ -135,22 +158,25 @@ export default function PainelWebLayout({
                 style={{
                   minHeight: 40,
                   borderWidth: 1,
-                  borderColor: "#D6E0F0",
+                  borderColor: colors.border,
                   borderRadius: 8,
                   paddingHorizontal: 11,
-                  backgroundColor: "#F8FAFF",
+                  backgroundColor: colors.surfaceElevated,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 9,
                 }}
               >
-                <MaterialIcons name="person" size={20} color="#2563EB" />
+                <MaterialIcons name="person" size={20} color={colors.primary} />
                 {!compacto ? (
                   <View>
-                    <Text selectable style={{ color: "#172033", fontWeight: "bold" }}>
+                    <Text
+                      selectable
+                      style={{ color: colors.text, fontWeight: "bold" }}
+                    >
                       {nomeUsuario || "Administrador"}
                     </Text>
-                    <Text style={{ color: "#64748B", fontSize: 12 }}>
+                    <Text style={{ color: colors.textSubtle, fontSize: 12 }}>
                       {tipoUsuario === "super_admin"
                         ? "Administrador principal"
                         : "Administrador"}
@@ -168,13 +194,13 @@ export default function PainelWebLayout({
                 height: 40,
                 borderRadius: 8,
                 borderWidth: 1,
-                borderColor: "#F0C8CC",
-                backgroundColor: "#FFF5F6",
+                borderColor: colors.dangerSurface,
+                backgroundColor: colors.dangerSurface,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <MaterialIcons name="logout" size={20} color="#A33A34" />
+              <MaterialIcons name="logout" size={20} color={colors.danger} />
             </Pressable>
           </View>
         </View>
@@ -202,24 +228,24 @@ export default function PainelWebLayout({
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     borderWidth: 1,
-                    borderColor: ativo ? "#2563EB" : "#D6E0F0",
+                    borderColor: ativo ? colors.primary : colors.border,
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 8,
-                    backgroundColor: ativo ? "#2563EB" : "#F8FAFF",
-                    boxShadow: ativo
-                      ? "0 8px 18px rgba(37, 99, 235, 0.22)"
-                    : "none",
+                    backgroundColor: ativo
+                      ? colors.primary
+                      : colors.surfaceElevated,
+                    boxShadow: ativo ? sombraBotaoAtivo : "none",
                   }}
                 >
                   <MaterialIcons
                     name={item.icone}
                     size={18}
-                    color={ativo ? "white" : "#5B6B83"}
+                    color={ativo ? colors.primaryText : colors.iconMuted}
                   />
                   <Text
                     style={{
-                      color: ativo ? "white" : "#334155",
+                      color: ativo ? colors.primaryText : colors.textMuted,
                       fontWeight: ativo ? "bold" : "600",
                       fontSize: 13,
                     }}

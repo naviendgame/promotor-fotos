@@ -25,12 +25,20 @@ import {
   atualizarDadosPerfilUsuario,
   buscarPerfilUsuario,
 } from "../services/usuarios-service";
+import { useTheme, type ThemeMode } from "../theme/theme-context";
+import type { ThemeColors } from "../theme/colors";
 
 type PerfilUsuarioProps = {
   tipoEsperado: "promotor" | "admin";
   totalFotos?: number;
   totalLojas?: number;
 };
+
+const OPCOES_TEMA: { valor: ThemeMode; rotulo: string; icone: keyof typeof MaterialIcons.glyphMap }[] = [
+  { valor: "light", rotulo: "Claro", icone: "light-mode" },
+  { valor: "dark", rotulo: "Escuro", icone: "dark-mode" },
+  { valor: "system", rotulo: "Sistema", icone: "smartphone" },
+];
 
 function mensagemErro(error: any) {
   if (error?.code === "auth/wrong-password") return "A senha atual esta incorreta.";
@@ -56,6 +64,9 @@ export default function PerfilUsuario({
   totalFotos,
   totalLojas,
 }: PerfilUsuarioProps) {
+  const { colors, mode, setMode } = useTheme();
+  const estilos = criarEstilos(colors);
+
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [emailOriginal, setEmailOriginal] = useState("");
@@ -218,7 +229,7 @@ export default function PerfilUsuario({
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: "#121212" }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={{
@@ -243,74 +254,127 @@ export default function PerfilUsuario({
             width: 42,
             height: 42,
             borderRadius: 8,
-            backgroundColor: "#242424",
+            backgroundColor: colors.surfaceHighlight,
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <MaterialIcons name="arrow-back" size={24} color="white" />
+          <MaterialIcons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
 
         <View style={{ flex: 1 }}>
-          <Text style={{ color: "white", fontSize: 28, fontWeight: "bold" }}>
+          <Text style={{ color: colors.text, fontSize: 28, fontWeight: "bold" }}>
             Meu Perfil
           </Text>
-          <Text style={{ color: "#aaa", paddingTop: 3 }}>{tituloTipo}</Text>
+          <Text style={{ color: colors.textSubtle, paddingTop: 3 }}>
+            {tituloTipo}
+          </Text>
         </View>
       </View>
 
       {tipoEsperado === "promotor" ? (
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <View style={resumo}>
-            <MaterialIcons name="store" size={22} color="#4ADE80" />
-            <Text style={rotuloResumo}>Lojas</Text>
-            <Text style={[valorResumo, { color: "#4ADE80" }]}>
+          <View style={estilos.resumo}>
+            <MaterialIcons name="store" size={22} color={colors.success} />
+            <Text style={estilos.rotuloResumo}>Lojas</Text>
+            <Text style={[estilos.valorResumo, { color: colors.success }]}>
               {totalLojas || 0}
             </Text>
           </View>
-          <View style={resumo}>
-            <MaterialIcons name="photo-library" size={22} color="#60A5FA" />
-            <Text style={rotuloResumo}>Fotos</Text>
-            <Text style={[valorResumo, { color: "#60A5FA" }]}>
+          <View style={estilos.resumo}>
+            <MaterialIcons name="photo-library" size={22} color={colors.info} />
+            <Text style={estilos.rotuloResumo}>Fotos</Text>
+            <Text style={[estilos.valorResumo, { color: colors.info }]}>
               {totalFotos || 0}
             </Text>
           </View>
         </View>
       ) : null}
 
-      <View style={secao}>
-        <Text style={tituloSecao}>Dados pessoais</Text>
+      <View style={estilos.secao}>
+        <Text style={estilos.tituloSecao}>Aparencia</Text>
+        <Text style={estilos.descricao}>
+          Escolha como o app deve aparecer. &quot;Sistema&quot; segue a
+          configuracao do seu celular.
+        </Text>
 
-        <Text style={rotuloCampo}>Nome</Text>
+        <View style={{ flexDirection: "row", gap: 8, paddingTop: 6 }}>
+          {OPCOES_TEMA.map((opcao) => {
+            const ativo = mode === opcao.valor;
+
+            return (
+              <Pressable
+                key={opcao.valor}
+                onPress={() => setMode(opcao.valor)}
+                accessibilityLabel={`Tema ${opcao.rotulo}`}
+                style={{
+                  flex: 1,
+                  minHeight: 76,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: ativo ? colors.primary : colors.border,
+                  backgroundColor: ativo
+                    ? colors.primarySurface
+                    : colors.surfaceElevated,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  padding: 8,
+                }}
+              >
+                <MaterialIcons
+                  name={opcao.icone}
+                  size={22}
+                  color={ativo ? colors.primary : colors.iconMuted}
+                />
+                <Text
+                  style={{
+                    color: ativo ? colors.primary : colors.textMuted,
+                    fontWeight: "bold",
+                    fontSize: 13,
+                  }}
+                >
+                  {opcao.rotulo}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={estilos.secao}>
+        <Text style={estilos.tituloSecao}>Dados pessoais</Text>
+
+        <Text style={estilos.rotuloCampo}>Nome</Text>
         <TextInput
           value={nome}
           onChangeText={setNome}
           placeholder="Nome completo"
-          placeholderTextColor="#777"
-          style={campo}
+          placeholderTextColor={colors.placeholder}
+          style={estilos.campo}
         />
 
-        <Text style={rotuloCampo}>Email</Text>
+        <Text style={estilos.rotuloCampo}>Email</Text>
         <TextInput
           value={email}
           onChangeText={setEmail}
           placeholder="Email"
-          placeholderTextColor="#777"
+          placeholderTextColor={colors.placeholder}
           autoCapitalize="none"
           keyboardType="email-address"
-          style={campo}
+          style={estilos.campo}
         />
 
         {email.trim().toLowerCase() !== emailOriginal.toLowerCase() ? (
           <>
-            <Text style={rotuloCampo}>Senha atual</Text>
+            <Text style={estilos.rotuloCampo}>Senha atual</Text>
             <TextInput
               value={senhaAtual}
               onChangeText={setSenhaAtual}
               placeholder="Confirme sua senha"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.placeholder}
               secureTextEntry
-              style={campo}
+              style={estilos.campo}
             />
           </>
         ) : null}
@@ -319,60 +383,68 @@ export default function PerfilUsuario({
           onPress={salvarDados}
           disabled={salvandoDados}
           style={[
-            botao,
-            { backgroundColor: salvandoDados ? "#475569" : "#2563EB" },
+            estilos.botao,
+            {
+              backgroundColor: salvandoDados
+                ? colors.borderStrong
+                : colors.primary,
+            },
           ]}
         >
-          <MaterialIcons name="save" size={21} color="white" />
-          <Text style={textoBotao}>
+          <MaterialIcons name="save" size={21} color={colors.primaryText} />
+          <Text style={[estilos.textoBotao, { color: colors.primaryText }]}>
             {salvandoDados ? "Salvando..." : "Salvar dados"}
           </Text>
         </Pressable>
       </View>
 
-      <View style={secao}>
-        <Text style={tituloSecao}>Alterar senha</Text>
+      <View style={estilos.secao}>
+        <Text style={estilos.tituloSecao}>Alterar senha</Text>
 
-        <Text style={rotuloCampo}>Senha atual</Text>
+        <Text style={estilos.rotuloCampo}>Senha atual</Text>
         <TextInput
           value={senhaAtual}
           onChangeText={setSenhaAtual}
           placeholder="Senha atual"
-          placeholderTextColor="#777"
+          placeholderTextColor={colors.placeholder}
           secureTextEntry
-          style={campo}
+          style={estilos.campo}
         />
 
-        <Text style={rotuloCampo}>Nova senha</Text>
+        <Text style={estilos.rotuloCampo}>Nova senha</Text>
         <TextInput
           value={novaSenha}
           onChangeText={setNovaSenha}
           placeholder="Minimo de 6 caracteres"
-          placeholderTextColor="#777"
+          placeholderTextColor={colors.placeholder}
           secureTextEntry
-          style={campo}
+          style={estilos.campo}
         />
 
-        <Text style={rotuloCampo}>Confirmar nova senha</Text>
+        <Text style={estilos.rotuloCampo}>Confirmar nova senha</Text>
         <TextInput
           value={confirmarSenha}
           onChangeText={setConfirmarSenha}
           placeholder="Repita a nova senha"
-          placeholderTextColor="#777"
+          placeholderTextColor={colors.placeholder}
           secureTextEntry
-          style={campo}
+          style={estilos.campo}
         />
 
         <Pressable
           onPress={salvarNovaSenha}
           disabled={salvandoSenha}
           style={[
-            botao,
-            { backgroundColor: salvandoSenha ? "#475569" : "#7C3AED" },
+            estilos.botao,
+            {
+              backgroundColor: salvandoSenha
+                ? colors.borderStrong
+                : "#7C3AED",
+            },
           ]}
         >
-          <MaterialIcons name="lock-reset" size={22} color="white" />
-          <Text style={textoBotao}>
+          <MaterialIcons name="lock-reset" size={22} color={colors.primaryText} />
+          <Text style={[estilos.textoBotao, { color: colors.primaryText }]}>
             {salvandoSenha ? "Alterando..." : "Alterar senha"}
           </Text>
         </Pressable>
@@ -380,73 +452,81 @@ export default function PerfilUsuario({
 
       <Pressable
         onPress={sair}
-        style={[botao, { backgroundColor: "#B91C1C" }]}
+        style={[estilos.botao, { backgroundColor: colors.danger }]}
       >
-        <MaterialIcons name="logout" size={21} color="white" />
-        <Text style={textoBotao}>Sair</Text>
+        <MaterialIcons name="logout" size={21} color={colors.primaryText} />
+        <Text style={[estilos.textoBotao, { color: colors.primaryText }]}>
+          Sair
+        </Text>
       </Pressable>
     </ScrollView>
   );
 }
 
-const secao = {
-  backgroundColor: "#1E1E1E",
-  borderRadius: 8,
-  padding: 16,
-  gap: 8,
-};
-
-const tituloSecao = {
-  color: "white",
-  fontSize: 19,
-  fontWeight: "bold" as const,
-  paddingBottom: 4,
-};
-
-const rotuloCampo = {
-  color: "#bbb",
-  fontSize: 14,
-};
-
-const campo = {
-  borderWidth: 1,
-  borderColor: "#444",
-  borderRadius: 8,
-  padding: 13,
-  color: "white",
-  marginBottom: 4,
-};
-
-const botao = {
-  minHeight: 48,
-  borderRadius: 8,
-  paddingHorizontal: 14,
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  gap: 8,
-};
-
-const textoBotao = {
-  color: "white",
-  fontWeight: "bold" as const,
-};
-
-const resumo = {
-  flex: 1,
-  minHeight: 108,
-  backgroundColor: "#1E1E1E",
-  borderRadius: 8,
-  padding: 14,
-  gap: 5,
-};
-
-const rotuloResumo = {
-  color: "#ccc",
-};
-
-const valorResumo = {
-  fontSize: 28,
-  fontWeight: "bold" as const,
-  fontVariant: ["tabular-nums"] as ("tabular-nums")[],
-};
+function criarEstilos(colors: ThemeColors) {
+  return {
+    secao: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 16,
+      gap: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    tituloSecao: {
+      color: colors.text,
+      fontSize: 19,
+      fontWeight: "bold" as const,
+      paddingBottom: 4,
+    },
+    descricao: {
+      color: colors.textSubtle,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    rotuloCampo: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    campo: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 13,
+      color: colors.text,
+      marginBottom: 4,
+      backgroundColor: colors.backgroundAlt,
+    },
+    botao: {
+      minHeight: 48,
+      borderRadius: 8,
+      paddingHorizontal: 14,
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+      gap: 8,
+    },
+    textoBotao: {
+      color: colors.primaryText,
+      fontWeight: "bold" as const,
+    },
+    resumo: {
+      flex: 1,
+      minHeight: 108,
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 14,
+      gap: 5,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    rotuloResumo: {
+      color: colors.textMuted,
+    },
+    valorResumo: {
+      fontSize: 28,
+      fontWeight: "bold" as const,
+      fontVariant: ["tabular-nums"] as ("tabular-nums")[],
+    },
+  };
+}

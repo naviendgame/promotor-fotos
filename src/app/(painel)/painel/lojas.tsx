@@ -24,9 +24,149 @@ import {
   criarLoja,
   lojasCollection,
 } from "@/services/lojas-service";
+import { useTheme } from "@/theme/theme-context";
+import type { ThemeColors } from "@/theme/colors";
 import type { Loja } from "@/types/loja";
 
+/**
+ * Hook que devolve todos os estilos compartilhados das telas do painel web,
+ * respondendo automaticamente ao tema atual.
+ */
+export function useEstilosPainel() {
+  const { colors, scheme } = useTheme();
+
+  const sombraSuave =
+    scheme === "light"
+      ? "0 10px 24px rgba(37, 99, 235, 0.07)"
+      : "0 10px 24px rgba(0, 0, 0, 0.35)";
+  const sombraBotao =
+    scheme === "light"
+      ? "0 8px 18px rgba(37, 99, 235, 0.22)"
+      : "0 8px 18px rgba(47, 111, 237, 0.45)";
+
+  return {
+    colors,
+    tabela: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      overflow: "hidden" as const,
+      boxShadow: sombraSuave,
+    },
+    cabecalhoTabela: {
+      minHeight: 44,
+      backgroundColor: colors.surfaceElevated,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingHorizontal: 17,
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 14,
+    },
+    linhaTabela: {
+      minHeight: 68,
+      borderBottomColor: colors.border,
+      paddingHorizontal: 17,
+      paddingVertical: 11,
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 14,
+    },
+    celulaCabecalho: {
+      flex: 1,
+      color: colors.textSubtle,
+      fontSize: 11,
+      fontWeight: "bold" as const,
+    },
+    celula: { flex: 1, color: colors.textMuted },
+    iconeLinha: {
+      width: 34,
+      height: 34,
+      borderRadius: 7,
+      backgroundColor: colors.primarySurface,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+    },
+    botaoPrimario: {
+      minHeight: 42,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 15,
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+      gap: 8,
+      boxShadow: sombraBotao,
+    },
+    fundoModal: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: "center" as const,
+      alignItems: "center" as const,
+      padding: 22,
+    },
+    tituloModal: {
+      minHeight: 62,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingHorizontal: 20,
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "space-between" as const,
+    },
+    rodapeModal: {
+      minHeight: 68,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      paddingHorizontal: 20,
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      justifyContent: "flex-end" as const,
+      gap: 9,
+    },
+    botaoFechar: {
+      width: 36,
+      height: 36,
+      borderRadius: 7,
+      backgroundColor: colors.surfaceElevated,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+    },
+    botaoSecundario: {
+      minHeight: 42,
+      borderRadius: 7,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 15,
+      justifyContent: "center" as const,
+    },
+    badgeAtivo: {
+      alignSelf: "flex-start" as const,
+      color: colors.successText,
+      backgroundColor: colors.successSurface,
+      borderRadius: 5,
+      paddingVertical: 5,
+      paddingHorizontal: 8,
+      fontSize: 12,
+      fontWeight: "bold" as const,
+    },
+    badgeInativo: {
+      alignSelf: "flex-start" as const,
+      color: colors.dangerText,
+      backgroundColor: colors.dangerSurface,
+      borderRadius: 5,
+      paddingVertical: 5,
+      paddingHorizontal: 8,
+      fontSize: 12,
+      fontWeight: "bold" as const,
+    },
+  };
+}
+
 export default function LojasWeb() {
+  const estilos = useEstilosPainel();
+  const { colors } = estilos;
   const [lojas, setLojas] = useState<Loja[]>([]);
   const [busca, setBusca] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
@@ -94,17 +234,21 @@ export default function LojasWeb() {
         onPress={() => setModalAberto(true)}
       />
 
-      <CampoBusca valor={busca} onChange={setBusca} placeholder="Buscar loja, cidade ou estado" />
+      <CampoBusca
+        valor={busca}
+        onChange={setBusca}
+        placeholder="Buscar loja, cidade ou estado"
+      />
 
       <Animated.View
         entering={FadeInUp.duration(260)}
         layout={LinearTransition.duration(180)}
-        style={tabela}
+        style={estilos.tabela}
       >
-        <View style={cabecalhoTabela}>
-          <Text style={[celulaCabecalho, { flex: 1.5 }]}>LOJA</Text>
-          <Text style={celulaCabecalho}>CIDADE</Text>
-          <Text style={celulaCabecalho}>ESTADO</Text>
+        <View style={estilos.cabecalhoTabela}>
+          <Text style={[estilos.celulaCabecalho, { flex: 1.5 }]}>LOJA</Text>
+          <Text style={estilos.celulaCabecalho}>CIDADE</Text>
+          <Text style={estilos.celulaCabecalho}>ESTADO</Text>
         </View>
         {filtradas.map((loja, indice) => (
           <Animated.View
@@ -112,21 +256,32 @@ export default function LojasWeb() {
             layout={LinearTransition.duration(160)}
             key={loja.id}
             style={[
-              linhaTabela,
+              estilos.linhaTabela,
               { borderBottomWidth: indice < filtradas.length - 1 ? 1 : 0 },
             ]}
           >
-            <View style={{ flex: 1.5, flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <View style={iconeLinha}>
-                <MaterialIcons name="store" size={19} color="#2F6FED" />
+            <View
+              style={{
+                flex: 1.5,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <View style={estilos.iconeLinha}>
+                <MaterialIcons name="store" size={19} color={colors.primary} />
               </View>
-              <Text style={{ color: "#263247", fontWeight: "bold" }}>{loja.nome}</Text>
+              <Text style={{ color: colors.text, fontWeight: "bold" }}>
+                {loja.nome}
+              </Text>
             </View>
-            <Text style={celula}>{loja.cidade || "-"}</Text>
-            <Text style={celula}>{loja.estado || "-"}</Text>
+            <Text style={estilos.celula}>{loja.cidade || "-"}</Text>
+            <Text style={estilos.celula}>{loja.estado || "-"}</Text>
           </Animated.View>
         ))}
-        {filtradas.length === 0 ? <Vazio texto="Nenhuma loja encontrada." /> : null}
+        {filtradas.length === 0 ? (
+          <Vazio texto="Nenhuma loja encontrada." />
+        ) : null}
       </Animated.View>
 
       <FormularioModal
@@ -157,6 +312,9 @@ export function Cabecalho({
   icone?: keyof typeof MaterialIcons.glyphMap;
   onPress?: () => void;
 }) {
+  const estilos = useEstilosPainel();
+  const { colors } = estilos;
+
   return (
     <Animated.View
       entering={FadeInUp.duration(240)}
@@ -169,13 +327,23 @@ export function Cabecalho({
       }}
     >
       <View>
-        <Text style={{ color: "#172033", fontSize: 27, fontWeight: "bold" }}>{titulo}</Text>
-        <Text style={{ color: "#64748B", paddingTop: 5 }}>{subtitulo}</Text>
+        <Text style={{ color: colors.text, fontSize: 27, fontWeight: "bold" }}>
+          {titulo}
+        </Text>
+        <Text style={{ color: colors.textSubtle, paddingTop: 5 }}>
+          {subtitulo}
+        </Text>
       </View>
       {botao && onPress ? (
-        <Pressable onPress={onPress} style={botaoPrimario}>
-          <MaterialIcons name={icone || "add"} size={20} color="white" />
-          <Text style={{ color: "white", fontWeight: "bold" }}>{botao}</Text>
+        <Pressable onPress={onPress} style={estilos.botaoPrimario}>
+          <MaterialIcons
+            name={icone || "add"}
+            size={20}
+            color={colors.primaryText}
+          />
+          <Text style={{ color: colors.primaryText, fontWeight: "bold" }}>
+            {botao}
+          </Text>
         </Pressable>
       ) : null}
     </Animated.View>
@@ -191,6 +359,12 @@ export function CampoBusca({
   onChange: (valor: string) => void;
   placeholder: string;
 }) {
+  const { colors, scheme } = useTheme();
+  const sombra =
+    scheme === "light"
+      ? "0 8px 18px rgba(37, 99, 235, 0.06)"
+      : "0 8px 18px rgba(0, 0, 0, 0.25)";
+
   return (
     <Animated.View
       entering={FadeInUp.duration(240).delay(40)}
@@ -198,23 +372,23 @@ export function CampoBusca({
         maxWidth: 430,
         minHeight: 44,
         borderWidth: 1,
-        borderColor: "#D6E0F0",
+        borderColor: colors.border,
         borderRadius: 8,
-        backgroundColor: "white",
+        backgroundColor: colors.surface,
         paddingHorizontal: 12,
         flexDirection: "row",
         alignItems: "center",
         gap: 9,
-        boxShadow: "0 8px 18px rgba(37, 99, 235, 0.06)",
+        boxShadow: sombra,
       }}
     >
-      <MaterialIcons name="search" size={20} color="#64748B" />
+      <MaterialIcons name="search" size={20} color={colors.iconMuted} />
       <TextInput
         value={valor}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor="#9AA5B5"
-        style={{ flex: 1, color: "#263247", paddingVertical: 11 }}
+        placeholderTextColor={colors.placeholder}
+        style={{ flex: 1, color: colors.text, paddingVertical: 11 }}
       />
     </Animated.View>
   );
@@ -233,21 +407,27 @@ export function Campo({
   secureTextEntry?: boolean;
   maxLength?: number;
 }) {
+  const { colors } = useTheme();
+
   return (
     <View style={{ gap: 7 }}>
-      <Text style={{ color: "#4B586D", fontWeight: "bold" }}>{rotulo}</Text>
+      <Text style={{ color: colors.textMuted, fontWeight: "bold" }}>
+        {rotulo}
+      </Text>
       <TextInput
         value={valor}
         onChangeText={onChange}
         secureTextEntry={secureTextEntry}
         maxLength={maxLength}
+        placeholderTextColor={colors.placeholder}
         style={{
           minHeight: 44,
           borderWidth: 1,
-          borderColor: "#D6E0F0",
+          borderColor: colors.border,
           borderRadius: 7,
           paddingHorizontal: 11,
-          color: "#172033",
+          color: colors.text,
+          backgroundColor: colors.backgroundAlt,
         }}
       />
     </View>
@@ -269,33 +449,57 @@ export function FormularioModal({
   salvando: boolean;
   children: React.ReactNode;
 }) {
+  const estilos = useEstilosPainel();
+  const { colors, scheme } = estilos;
+  const sombraModal =
+    scheme === "light"
+      ? "0 18px 50px rgba(15, 23, 42, 0.22)"
+      : "0 18px 50px rgba(0, 0, 0, 0.65)";
+
   return (
-    <Modal visible={visivel} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={fundoModal}>
+    <Modal
+      visible={visivel}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={estilos.fundoModal}>
         <Animated.View
           entering={ZoomIn.duration(180)}
           style={{
             width: "100%",
             maxWidth: 520,
             maxHeight: "88%",
-            backgroundColor: "white",
+            backgroundColor: colors.surface,
             borderRadius: 8,
-            boxShadow: "0 18px 50px rgba(15, 23, 42, 0.22)",
+            borderWidth: 1,
+            borderColor: colors.border,
+            boxShadow: sombraModal,
           }}
         >
-          <View style={tituloModal}>
-            <Text style={{ color: "#172033", fontSize: 20, fontWeight: "bold" }}>{titulo}</Text>
-            <Pressable onPress={onClose} style={botaoFechar}>
-              <MaterialIcons name="close" size={21} color="#526076" />
+          <View style={estilos.tituloModal}>
+            <Text style={{ color: colors.text, fontSize: 20, fontWeight: "bold" }}>
+              {titulo}
+            </Text>
+            <Pressable onPress={onClose} style={estilos.botaoFechar}>
+              <MaterialIcons name="close" size={21} color={colors.textMuted} />
             </Pressable>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 20, gap: 15 }}>{children}</ScrollView>
-          <View style={rodapeModal}>
-            <Pressable onPress={onClose} style={botaoSecundario}>
-              <Text style={{ color: "#526076", fontWeight: "bold" }}>Cancelar</Text>
+          <ScrollView contentContainerStyle={{ padding: 20, gap: 15 }}>
+            {children}
+          </ScrollView>
+          <View style={estilos.rodapeModal}>
+            <Pressable onPress={onClose} style={estilos.botaoSecundario}>
+              <Text style={{ color: colors.textMuted, fontWeight: "bold" }}>
+                Cancelar
+              </Text>
             </Pressable>
-            <Pressable onPress={onSave} disabled={salvando} style={botaoPrimario}>
-              <Text style={{ color: "white", fontWeight: "bold" }}>
+            <Pressable
+              onPress={onSave}
+              disabled={salvando}
+              style={estilos.botaoPrimario}
+            >
+              <Text style={{ color: colors.primaryText, fontWeight: "bold" }}>
                 {salvando ? "Salvando..." : "Salvar"}
               </Text>
             </Pressable>
@@ -307,42 +511,24 @@ export function FormularioModal({
 }
 
 export function Vazio({ texto }: { texto: string }) {
-  return <Text style={{ color: "#7A879D", padding: 22, textAlign: "center" }}>{texto}</Text>;
+  const { colors } = useTheme();
+  return (
+    <Text
+      style={{ color: colors.textSubtle, padding: 22, textAlign: "center" }}
+    >
+      {texto}
+    </Text>
+  );
 }
 
-export const tabela = {
-  backgroundColor: "white",
-  borderWidth: 1,
-  borderColor: "#DDE6F3",
-  borderRadius: 8,
-  overflow: "hidden" as const,
-  boxShadow: "0 10px 24px rgba(37, 99, 235, 0.07)",
-};
-export const cabecalhoTabela = {
-  minHeight: 44,
-  backgroundColor: "#F8FAFF",
-  borderBottomWidth: 1,
-  borderBottomColor: "#E4ECF8",
-  paddingHorizontal: 17,
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 14,
-};
-export const linhaTabela = {
-  minHeight: 68,
-  borderBottomColor: "#EEF3FA",
-  paddingHorizontal: 17,
-  paddingVertical: 11,
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 14,
-};
-export const celulaCabecalho = { flex: 1, color: "#7B879A", fontSize: 11, fontWeight: "bold" as const };
-export const celula = { flex: 1, color: "#59677D" };
-export const iconeLinha = { width: 34, height: 34, borderRadius: 7, backgroundColor: "#EAF1FF", alignItems: "center" as const, justifyContent: "center" as const };
-export const botaoPrimario = { minHeight: 42, borderRadius: 8, backgroundColor: "#2563EB", paddingHorizontal: 15, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 8, boxShadow: "0 8px 18px rgba(37, 99, 235, 0.22)" };
-const fundoModal = { flex: 1, backgroundColor: "rgba(20,28,42,0.62)", justifyContent: "center" as const, alignItems: "center" as const, padding: 22 };
-const tituloModal = { minHeight: 62, borderBottomWidth: 1, borderBottomColor: "#E4ECF8", paddingHorizontal: 20, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const };
-const rodapeModal = { minHeight: 68, borderTopWidth: 1, borderTopColor: "#E4ECF8", paddingHorizontal: 20, flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "flex-end" as const, gap: 9 };
-const botaoFechar = { width: 36, height: 36, borderRadius: 7, backgroundColor: "#F0F2F6", alignItems: "center" as const, justifyContent: "center" as const };
-const botaoSecundario = { minHeight: 42, borderRadius: 7, borderWidth: 1, borderColor: "#D7DDE7", paddingHorizontal: 15, justifyContent: "center" as const };
+/**
+ * @deprecated Mantido por compatibilidade temporária — use `useEstilosPainel()`.
+ * Esses objetos ficaram congelados no tema escuro e não respondem a alterações.
+ */
+export const tabela = {};
+export const cabecalhoTabela = {};
+export const linhaTabela = {};
+export const celulaCabecalho = {};
+export const celula = {};
+export const iconeLinha = {};
+export const botaoPrimario = {};

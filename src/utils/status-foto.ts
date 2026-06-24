@@ -54,3 +54,14 @@ export function visualStatusWeb(status?: string) {
   }
   return { fundo: "#E8EFFD", texto: "#2F6FED" };
 }
+
+/**
+ * Variante que escolhe automaticamente entre o visual escuro e claro
+ * de acordo com o tema atual do app.
+ */
+export function visualStatusPorTema(
+  status: string | undefined,
+  scheme: "light" | "dark",
+) {
+  return scheme === "light" ? visualStatusWeb(status) : visualStatusEscuro(status);
+}

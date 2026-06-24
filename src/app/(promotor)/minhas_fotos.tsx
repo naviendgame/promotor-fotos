@@ -24,6 +24,8 @@ import {
   moverFotoParaLixeira,
   restaurarFotoDaLixeira,
 } from "@/services/fotos-service";
+import { useTheme } from "@/theme/theme-context";
+import type { ThemeColors } from "@/theme/colors";
 import type { Foto } from "@/types/foto";
 import { obterData } from "@/utils/datas";
 import {
@@ -36,7 +38,7 @@ import {
 import {
   obterStatusFoto,
   textoStatusFoto,
-  visualStatusEscuro,
+  visualStatusPorTema,
 } from "@/utils/status-foto";
 
 type ModoLista = "ativas" | "lixeira";
@@ -52,10 +54,6 @@ function obterStatus(foto: Foto) {
 
 function textoStatus(status: string) {
   return textoStatusFoto(status);
-}
-
-function visualStatus(status: string) {
-  return visualStatusEscuro(status);
 }
 
 function estaNoPeriodo(dataFirebase: any, periodo: Periodo) {
@@ -81,6 +79,7 @@ function estaNoPeriodo(dataFirebase: any, periodo: Periodo) {
 }
 
 export default function MinhasFotos() {
+  const { colors, scheme } = useTheme();
   const parametros = useLocalSearchParams<{
     modoInicial?: string;
     statusInicial?: string;
@@ -102,6 +101,10 @@ export default function MinhasFotos() {
   const [processando, setProcessando] = useState(false);
   const fotoInicialProcessada = useRef(false);
 
+  function visualStatus(status: string) {
+    return visualStatusPorTema(status, scheme);
+  }
+
   useEffect(() => {
     const usuarioAtual = auth.currentUser;
 
@@ -120,14 +123,8 @@ export default function MinhasFotos() {
     });
   }, []);
 
-  const fotosAtivas = useMemo(
-    () => filtrarFotosAtuais(fotos),
-    [fotos],
-  );
-  const fotosLixeira = useMemo(
-    () => filtrarFotosNaLixeira(fotos),
-    [fotos],
-  );
+  const fotosAtivas = useMemo(() => filtrarFotosAtuais(fotos), [fotos]);
+  const fotosLixeira = useMemo(() => filtrarFotosNaLixeira(fotos), [fotos]);
 
   const opcoes = useMemo(
     () => ({
@@ -274,21 +271,23 @@ export default function MinhasFotos() {
     if (confirmacao === "definitiva") excluirDefinitivamente(fotoSelecionada);
   }
 
+  const estilos = criarEstilos(colors);
+
   const cabecalho = (
     <View style={{ gap: 18, paddingBottom: 18 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
         <Pressable
           onPress={() => router.back()}
           accessibilityLabel="Voltar"
-          style={estiloBotaoIcone}
+          style={estilos.botaoIcone}
         >
-          <MaterialIcons name="arrow-back" size={23} color="white" />
+          <MaterialIcons name="arrow-back" size={23} color={colors.text} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: "white", fontSize: 27, fontWeight: "bold" }}>
+          <Text style={{ color: colors.text, fontSize: 27, fontWeight: "bold" }}>
             Minhas fotos
           </Text>
-          <Text style={{ color: "#8E9AAF", paddingTop: 3 }}>
+          <Text style={{ color: colors.textSubtle, paddingTop: 3 }}>
             {fotosFiltradas.length} foto(s) exibida(s)
           </Text>
         </View>
@@ -297,17 +296,21 @@ export default function MinhasFotos() {
       <View
         style={{
           flexDirection: "row",
-          backgroundColor: "#1A1D23",
+          backgroundColor: colors.surface,
           borderRadius: 8,
           padding: 4,
+          borderWidth: 1,
+          borderColor: colors.border,
         }}
       >
         <SeletorModo
+          colors={colors}
           titulo={`Fotos (${fotosAtivas.length})`}
           ativo={modo === "ativas"}
           onPress={() => trocarModo("ativas")}
         />
         <SeletorModo
+          colors={colors}
           titulo={`Lixeira (${fotosLixeira.length})`}
           ativo={modo === "lixeira"}
           onPress={() => trocarModo("lixeira")}
@@ -315,18 +318,21 @@ export default function MinhasFotos() {
       </View>
 
       <GrupoFiltro
+        colors={colors}
         titulo="Loja"
         opcoes={opcoes.lojas}
         valor={lojaFiltro}
         onChange={setLojaFiltro}
       />
       <GrupoFiltro
+        colors={colors}
         titulo="Categoria"
         opcoes={opcoes.categorias}
         valor={categoriaFiltro}
         onChange={setCategoriaFiltro}
       />
       <GrupoFiltro
+        colors={colors}
         titulo="Status"
         opcoes={statusOpcoes}
         valor={statusFiltro}
@@ -334,6 +340,7 @@ export default function MinhasFotos() {
         formatar={(valor) => (valor === "Todos" ? valor : textoStatus(valor))}
       />
       <GrupoFiltro
+        colors={colors}
         titulo="Periodo"
         opcoes={periodos}
         valor={periodoFiltro}
@@ -343,7 +350,7 @@ export default function MinhasFotos() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#0F1115" }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
         data={fotosFiltradas}
         keyExtractor={(item) => item.id}
@@ -359,7 +366,7 @@ export default function MinhasFotos() {
           <View
             style={{
               borderWidth: 1,
-              borderColor: "#2B3039",
+              borderColor: colors.border,
               borderRadius: 8,
               padding: 28,
               alignItems: "center",
@@ -369,14 +376,14 @@ export default function MinhasFotos() {
             <MaterialIcons
               name={modo === "lixeira" ? "delete-outline" : "image-search"}
               size={38}
-              color="#6B7688"
+              color={colors.iconMuted}
             />
-            <Text style={{ color: "#DCE2EA", fontWeight: "bold" }}>
+            <Text style={{ color: colors.text, fontWeight: "bold" }}>
               {modo === "lixeira"
                 ? "A lixeira esta vazia"
                 : "Nenhuma foto encontrada"}
             </Text>
-            <Text style={{ color: "#7E899A", textAlign: "center" }}>
+            <Text style={{ color: colors.textSubtle, textAlign: "center" }}>
               {modo === "lixeira"
                 ? "As fotos removidas por voce aparecerao aqui."
                 : "Altere os filtros para consultar outros envios."}
@@ -390,9 +397,9 @@ export default function MinhasFotos() {
           return (
             <View
               style={{
-                backgroundColor: "#191C22",
+                backgroundColor: colors.surface,
                 borderWidth: 1,
-                borderColor: "#292E37",
+                borderColor: colors.border,
                 borderRadius: 8,
                 overflow: "hidden",
                 marginBottom: 14,
@@ -405,7 +412,7 @@ export default function MinhasFotos() {
                   style={{
                     width: "100%",
                     aspectRatio: 4 / 3,
-                    backgroundColor: "#252A33",
+                    backgroundColor: colors.surfaceHighlight,
                   }}
                 />
               </Pressable>
@@ -422,14 +429,14 @@ export default function MinhasFotos() {
                     <Text
                       numberOfLines={1}
                       style={{
-                        color: "white",
+                        color: colors.text,
                         fontSize: 17,
                         fontWeight: "bold",
                       }}
                     >
                       {item.lojaNome || "Loja nao informada"}
                     </Text>
-                    <Text style={{ color: "#8792A4", paddingTop: 4 }}>
+                    <Text style={{ color: colors.textSubtle, paddingTop: 4 }}>
                       {formatarData(item.criadoEm)}
                     </Text>
                   </View>
@@ -453,20 +460,23 @@ export default function MinhasFotos() {
                   </View>
                 </View>
 
-                <Text style={{ color: "#B8C0CC" }}>{obterCategoria(item)}</Text>
+                <Text style={{ color: colors.textMuted }}>
+                  {obterCategoria(item)}
+                </Text>
 
                 {item.comentarioAdmin ? (
                   <View
                     style={{
-                      backgroundColor: "#232832",
+                      backgroundColor: colors.surfaceElevated,
                       borderLeftWidth: 3,
                       borderLeftColor: visual.texto,
                       padding: 11,
+                      borderRadius: 4,
                     }}
                   >
                     <Text
                       style={{
-                        color: "#AEB8C7",
+                        color: colors.textSubtle,
                         fontSize: 12,
                         fontWeight: "bold",
                         paddingBottom: 4,
@@ -474,7 +484,7 @@ export default function MinhasFotos() {
                     >
                       Comentario do responsavel
                     </Text>
-                    <Text style={{ color: "#EEF2F7", lineHeight: 20 }}>
+                    <Text style={{ color: colors.text, lineHeight: 20 }}>
                       {item.comentarioAdmin}
                     </Text>
                   </View>
@@ -488,8 +498,12 @@ export default function MinhasFotos() {
                       gap: 7,
                     }}
                   >
-                    <MaterialIcons name="history" size={18} color="#AFC5F5" />
-                    <Text style={{ color: "#AFC5F5", fontWeight: "bold" }}>
+                    <MaterialIcons
+                      name="history"
+                      size={18}
+                      color={colors.primary}
+                    />
+                    <Text style={{ color: colors.primary, fontWeight: "bold" }}>
                       Refação {item.numeroRefacao || 1}
                     </Text>
                   </View>
@@ -499,20 +513,53 @@ export default function MinhasFotos() {
                   {modo === "ativas" && status === "refazer" ? (
                     <Pressable
                       onPress={() => refazerFoto(item)}
-                      style={estiloAcaoRefazer}
+                      style={{
+                        flex: 1,
+                        minHeight: 42,
+                        borderRadius: 7,
+                        backgroundColor: colors.warningSurface,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 7,
+                      }}
                     >
-                      <MaterialIcons name="replay" size={20} color="#FDE68A" />
-                      <Text style={{ color: "#FEF3C7", fontWeight: "bold" }}>
+                      <MaterialIcons
+                        name="replay"
+                        size={20}
+                        color={colors.warning}
+                      />
+                      <Text
+                        style={{
+                          color: colors.warningText,
+                          fontWeight: "bold",
+                        }}
+                      >
                         Refazer foto
                       </Text>
                     </Pressable>
                   ) : (
                     <Pressable
                       onPress={() => setFotoSelecionada(item)}
-                      style={estiloAcaoSecundaria}
+                      style={{
+                        flex: 1,
+                        minHeight: 42,
+                        borderRadius: 7,
+                        backgroundColor: colors.surfaceElevated,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 7,
+                      }}
                     >
-                      <MaterialIcons name="zoom-in" size={20} color="#AFC5F5" />
-                      <Text style={{ color: "#DDE7FB", fontWeight: "bold" }}>
+                      <MaterialIcons
+                        name="zoom-in"
+                        size={20}
+                        color={colors.primary}
+                      />
+                      <Text
+                        style={{ color: colors.textMuted, fontWeight: "bold" }}
+                      >
                         Visualizar
                       </Text>
                     </Pressable>
@@ -525,22 +572,47 @@ export default function MinhasFotos() {
                         setConfirmacao("lixeira");
                       }}
                       accessibilityLabel="Mover foto para a lixeira"
-                      style={estiloBotaoExcluir}
+                      style={{
+                        width: 44,
+                        minHeight: 42,
+                        borderRadius: 7,
+                        backgroundColor: colors.dangerSurface,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                     >
                       <MaterialIcons
                         name="delete-outline"
                         size={21}
-                        color="#FDA4AF"
+                        color={colors.danger}
                       />
                     </Pressable>
                   ) : (
                     <Pressable
                       onPress={() => restaurarFoto(item)}
                       disabled={processando}
-                      style={estiloAcaoRestaurar}
+                      style={{
+                        flex: 1,
+                        minHeight: 42,
+                        borderRadius: 7,
+                        backgroundColor: colors.successSurface,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 7,
+                      }}
                     >
-                      <MaterialIcons name="restore" size={20} color="#86EFAC" />
-                      <Text style={{ color: "#BBF7D0", fontWeight: "bold" }}>
+                      <MaterialIcons
+                        name="restore"
+                        size={20}
+                        color={colors.success}
+                      />
+                      <Text
+                        style={{
+                          color: colors.successText,
+                          fontWeight: "bold",
+                        }}
+                      >
                         Restaurar
                       </Text>
                     </Pressable>
@@ -579,7 +651,7 @@ export default function MinhasFotos() {
                 setFotoSelecionada(null);
               }}
               accessibilityLabel="Fechar foto"
-              style={estiloBotaoModal}
+              style={estilos.botaoModal}
             >
               <MaterialIcons name="close" size={25} color="white" />
             </Pressable>
@@ -589,7 +661,10 @@ export default function MinhasFotos() {
                 <Pressable
                   onPress={() => setConfirmacao("lixeira")}
                   accessibilityLabel="Mover para a lixeira"
-                  style={{ ...estiloBotaoModal, backgroundColor: "#7F1D2D" }}
+                  style={{
+                    ...estilos.botaoModal,
+                    backgroundColor: colors.danger,
+                  }}
                 >
                   <MaterialIcons
                     name="delete-outline"
@@ -602,14 +677,20 @@ export default function MinhasFotos() {
                   <Pressable
                     onPress={() => restaurarFoto(fotoSelecionada)}
                     accessibilityLabel="Restaurar foto"
-                    style={{ ...estiloBotaoModal, backgroundColor: "#166534" }}
+                    style={{
+                      ...estilos.botaoModal,
+                      backgroundColor: colors.success,
+                    }}
                   >
                     <MaterialIcons name="restore" size={24} color="white" />
                   </Pressable>
                   <Pressable
                     onPress={() => setConfirmacao("definitiva")}
                     accessibilityLabel="Excluir foto definitivamente"
-                    style={{ ...estiloBotaoModal, backgroundColor: "#7F1D2D" }}
+                    style={{
+                      ...estilos.botaoModal,
+                      backgroundColor: colors.danger,
+                    }}
                   >
                     <MaterialIcons
                       name="delete-forever"
@@ -685,7 +766,7 @@ export default function MinhasFotos() {
                   style={{
                     minHeight: 44,
                     borderRadius: 7,
-                    backgroundColor: "#8A5A0A",
+                    backgroundColor: colors.warning,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
@@ -718,9 +799,9 @@ export default function MinhasFotos() {
             >
               <View
                 style={{
-                  backgroundColor: "#1B1E24",
+                  backgroundColor: colors.surface,
                   borderWidth: 1,
-                  borderColor: "#303641",
+                  borderColor: colors.border,
                   borderRadius: 8,
                   padding: 20,
                   gap: 14,
@@ -733,17 +814,21 @@ export default function MinhasFotos() {
                       : "delete-forever"
                   }
                   size={32}
-                  color="#FDA4AF"
+                  color={colors.danger}
                 />
                 <View style={{ gap: 6 }}>
                   <Text
-                    style={{ color: "white", fontSize: 20, fontWeight: "bold" }}
+                    style={{
+                      color: colors.text,
+                      fontSize: 20,
+                      fontWeight: "bold",
+                    }}
                   >
                     {confirmacao === "lixeira"
                       ? "Mover para a lixeira?"
                       : "Excluir definitivamente?"}
                   </Text>
-                  <Text style={{ color: "#AEB7C5", lineHeight: 21 }}>
+                  <Text style={{ color: colors.textSubtle, lineHeight: 21 }}>
                     {confirmacao === "lixeira"
                       ? "A foto deixara de aparecer para os administradores, mas voce podera restaura-la depois."
                       : "Essa acao remove a foto permanentemente e nao pode ser desfeita."}
@@ -753,18 +838,36 @@ export default function MinhasFotos() {
                   <Pressable
                     onPress={() => setConfirmacao(null)}
                     disabled={processando}
-                    style={estiloBotaoCancelar}
+                    style={{
+                      flex: 1,
+                      minHeight: 44,
+                      borderRadius: 7,
+                      backgroundColor: colors.surfaceElevated,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
-                    <Text style={{ color: "white", fontWeight: "bold" }}>
+                    <Text style={{ color: colors.text, fontWeight: "bold" }}>
                       Cancelar
                     </Text>
                   </Pressable>
                   <Pressable
                     onPress={executarConfirmacao}
                     disabled={processando}
-                    style={estiloBotaoConfirmar}
+                    style={{
+                      flex: 1,
+                      minHeight: 44,
+                      borderRadius: 7,
+                      backgroundColor: colors.danger,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
-                    <Text style={{ color: "white", fontWeight: "bold" }}>
+                    <Text
+                      style={{ color: colors.primaryText, fontWeight: "bold" }}
+                    >
                       {processando
                         ? "Aguarde..."
                         : confirmacao === "lixeira"
@@ -783,10 +886,12 @@ export default function MinhasFotos() {
 }
 
 function SeletorModo({
+  colors,
   titulo,
   ativo,
   onPress,
 }: {
+  colors: ThemeColors;
   titulo: string;
   ativo: boolean;
   onPress: () => void;
@@ -800,12 +905,12 @@ function SeletorModo({
         borderRadius: 6,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: ativo ? "#2F6FED" : "transparent",
+        backgroundColor: ativo ? colors.primary : "transparent",
       }}
     >
       <Text
         style={{
-          color: ativo ? "white" : "#909BAD",
+          color: ativo ? colors.primaryText : colors.textSubtle,
           fontWeight: "bold",
         }}
       >
@@ -816,12 +921,14 @@ function SeletorModo({
 }
 
 function GrupoFiltro({
+  colors,
   titulo,
   opcoes,
   valor,
   onChange,
   formatar = (opcao) => opcao,
 }: {
+  colors: ThemeColors;
   titulo: string;
   opcoes: readonly string[];
   valor: string;
@@ -830,7 +937,7 @@ function GrupoFiltro({
 }) {
   return (
     <View style={{ gap: 8 }}>
-      <Text style={{ color: "#C8CFD9", fontSize: 13, fontWeight: "bold" }}>
+      <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: "bold" }}>
         {titulo}
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -848,13 +955,15 @@ function GrupoFiltro({
                 paddingHorizontal: 14,
                 marginRight: 8,
                 borderWidth: 1,
-                borderColor: selecionada ? "#4D82EE" : "#303640",
-                backgroundColor: selecionada ? "#234D9C" : "#191C22",
+                borderColor: selecionada ? colors.primary : colors.border,
+                backgroundColor: selecionada
+                  ? colors.primary
+                  : colors.surfaceElevated,
               }}
             >
               <Text
                 style={{
-                  color: selecionada ? "white" : "#A6B0BE",
+                  color: selecionada ? colors.primaryText : colors.textMuted,
                   fontWeight: selecionada ? "bold" : "normal",
                 }}
               >
@@ -868,82 +977,25 @@ function GrupoFiltro({
   );
 }
 
-const estiloBotaoIcone = {
-  width: 42,
-  height: 42,
-  borderRadius: 8,
-  backgroundColor: "#1B1F26",
-  borderWidth: 1,
-  borderColor: "#303640",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
-
-const estiloBotaoModal = {
-  width: 44,
-  height: 44,
-  borderRadius: 8,
-  backgroundColor: "rgba(31,35,43,0.94)",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
-
-const estiloAcaoSecundaria = {
-  flex: 1,
-  minHeight: 42,
-  borderRadius: 7,
-  backgroundColor: "#232A37",
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  gap: 7,
-};
-
-const estiloAcaoRestaurar = {
-  flex: 1,
-  minHeight: 42,
-  borderRadius: 7,
-  backgroundColor: "#153727",
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  gap: 7,
-};
-
-const estiloAcaoRefazer = {
-  flex: 1,
-  minHeight: 42,
-  borderRadius: 7,
-  backgroundColor: "#49310B",
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  gap: 7,
-};
-
-const estiloBotaoExcluir = {
-  width: 44,
-  minHeight: 42,
-  borderRadius: 7,
-  backgroundColor: "#431B22",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
-
-const estiloBotaoCancelar = {
-  flex: 1,
-  minHeight: 44,
-  borderRadius: 7,
-  backgroundColor: "#3A3F48",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
-
-const estiloBotaoConfirmar = {
-  flex: 1,
-  minHeight: 44,
-  borderRadius: 7,
-  backgroundColor: "#B42336",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-};
+function criarEstilos(colors: ThemeColors) {
+  return {
+    botaoIcone: {
+      width: 42,
+      height: 42,
+      borderRadius: 8,
+      backgroundColor: colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+    },
+    botaoModal: {
+      width: 44,
+      height: 44,
+      borderRadius: 8,
+      backgroundColor: "rgba(31,35,43,0.94)",
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+    },
+  };
+}

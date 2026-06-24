@@ -19,8 +19,18 @@ import {
 import { ROTAS } from "@/constants/routes";
 import { auth } from "@/services/firebaseConfig";
 import { buscarUsuario } from "@/services/usuarios-service";
+import { useTheme } from "@/theme/theme-context";
+
+// Painel lateral "marketing" mantém visual escuro fixo em ambos os temas,
+// pra preservar o contraste do branding. Apenas o lado do formulário responde.
+const LATERAL_BG = "#172033";
+const LATERAL_TEXTO = "#FFFFFF";
+const LATERAL_TEXTO_MUTED = "#AEBBD0";
+const LATERAL_TEXTO_SUBTLE = "#7F90AA";
+const LATERAL_ICONE = "#79A2FF";
 
 export default function LoginWeb() {
+  const { colors } = useTheme();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -90,20 +100,38 @@ export default function LoginWeb() {
     }
   }
 
+  const campoContainer = {
+    minHeight: 50,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 13,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 9,
+  };
+
+  const campo = {
+    flex: 1,
+    color: colors.text,
+    paddingVertical: 13,
+  };
+
   return (
     <View
       style={{
         flex: 1,
         minHeight: 620,
         flexDirection: compacto ? "column" : "row",
-        backgroundColor: "#F4F6F9",
+        backgroundColor: colors.background,
       }}
     >
       {!compacto ? (
         <View
           style={{
             flex: 1.05,
-            backgroundColor: "#172033",
+            backgroundColor: LATERAL_BG,
             padding: 64,
             justifyContent: "space-between",
           }}
@@ -120,14 +148,16 @@ export default function LoginWeb() {
                 width: 42,
                 height: 42,
                 borderRadius: 8,
-                backgroundColor: "#2F6FED",
+                backgroundColor: colors.primary,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               <MaterialIcons name="photo-camera" size={24} color="white" />
             </View>
-            <Text style={{ color: "white", fontSize: 20, fontWeight: "bold" }}>
+            <Text
+              style={{ color: LATERAL_TEXTO, fontSize: 20, fontWeight: "bold" }}
+            >
               Promotor Fotos
             </Text>
           </View>
@@ -135,7 +165,7 @@ export default function LoginWeb() {
           <View style={{ maxWidth: 560 }}>
             <Text
               style={{
-                color: "white",
+                color: LATERAL_TEXTO,
                 fontSize: 42,
                 fontWeight: "bold",
                 lineHeight: 50,
@@ -145,7 +175,7 @@ export default function LoginWeb() {
             </Text>
             <Text
               style={{
-                color: "#AEBBD0",
+                color: LATERAL_TEXTO_MUTED,
                 fontSize: 17,
                 lineHeight: 27,
                 paddingTop: 18,
@@ -169,15 +199,15 @@ export default function LoginWeb() {
                   <MaterialIcons
                     name={icone as keyof typeof MaterialIcons.glyphMap}
                     size={20}
-                    color="#79A2FF"
+                    color={LATERAL_ICONE}
                   />
-                  <Text style={{ color: "#D6DEEA" }}>{texto}</Text>
+                  <Text style={{ color: LATERAL_TEXTO_MUTED }}>{texto}</Text>
                 </View>
               ))}
             </View>
           </View>
 
-          <Text style={{ color: "#7F90AA", fontSize: 12 }}>
+          <Text style={{ color: LATERAL_TEXTO_SUBTLE, fontSize: 12 }}>
             Painel administrativo
           </Text>
         </View>
@@ -206,7 +236,7 @@ export default function LoginWeb() {
                   width: 38,
                   height: 38,
                   borderRadius: 8,
-                  backgroundColor: "#2F6FED",
+                  backgroundColor: colors.primary,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -214,29 +244,41 @@ export default function LoginWeb() {
                 <MaterialIcons name="photo-camera" size={22} color="white" />
               </View>
               <Text
-                style={{ color: "#172033", fontSize: 19, fontWeight: "bold" }}
+                style={{
+                  color: colors.text,
+                  fontSize: 19,
+                  fontWeight: "bold",
+                }}
               >
                 Promotor Fotos
               </Text>
             </View>
           ) : null}
 
-          <Text style={{ color: "#172033", fontSize: 30, fontWeight: "bold" }}>
+          <Text style={{ color: colors.text, fontSize: 30, fontWeight: "bold" }}>
             Acesse sua conta
           </Text>
-          <Text style={{ color: "#6F7C91", fontSize: 15, paddingTop: 8 }}>
+          <Text
+            style={{ color: colors.textSubtle, fontSize: 15, paddingTop: 8 }}
+          >
             Entre com as credenciais cadastradas no sistema.
           </Text>
 
           <View style={{ gap: 9, paddingTop: 30 }}>
-            <Text style={{ color: "#34415A", fontWeight: "bold" }}>Email</Text>
+            <Text style={{ color: colors.textMuted, fontWeight: "bold" }}>
+              Email
+            </Text>
             <View style={campoContainer}>
-              <MaterialIcons name="mail-outline" size={20} color="#8995A8" />
+              <MaterialIcons
+                name="mail-outline"
+                size={20}
+                color={colors.iconMuted}
+              />
               <TextInput
                 value={email}
                 onChangeText={setEmail}
                 placeholder="seu@email.com"
-                placeholderTextColor="#9AA5B5"
+                placeholderTextColor={colors.placeholder}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 style={campo}
@@ -246,26 +288,34 @@ export default function LoginWeb() {
           </View>
 
           <View style={{ gap: 9, paddingTop: 18 }}>
-            <Text style={{ color: "#34415A", fontWeight: "bold" }}>Senha</Text>
+            <Text style={{ color: colors.textMuted, fontWeight: "bold" }}>
+              Senha
+            </Text>
             <View style={campoContainer}>
-              <MaterialIcons name="lock-outline" size={20} color="#8995A8" />
+              <MaterialIcons
+                name="lock-outline"
+                size={20}
+                color={colors.iconMuted}
+              />
               <TextInput
                 value={senha}
                 onChangeText={setSenha}
                 placeholder="Digite sua senha"
-                placeholderTextColor="#9AA5B5"
+                placeholderTextColor={colors.placeholder}
                 secureTextEntry={!mostrarSenha}
                 style={campo}
                 onSubmitEditing={entrar}
               />
               <Pressable
                 onPress={() => setMostrarSenha((atual) => !atual)}
-                accessibilityLabel={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                accessibilityLabel={
+                  mostrarSenha ? "Ocultar senha" : "Mostrar senha"
+                }
               >
                 <MaterialIcons
                   name={mostrarSenha ? "visibility-off" : "visibility"}
                   size={20}
-                  color="#8995A8"
+                  color={colors.iconMuted}
                 />
               </Pressable>
             </View>
@@ -275,7 +325,7 @@ export default function LoginWeb() {
             onPress={recuperarSenha}
             style={{ alignSelf: "flex-end", paddingVertical: 13 }}
           >
-            <Text style={{ color: "#2F6FED", fontWeight: "bold" }}>
+            <Text style={{ color: colors.primary, fontWeight: "bold" }}>
               Esqueci minha senha
             </Text>
           </Pressable>
@@ -283,13 +333,13 @@ export default function LoginWeb() {
           {mensagem ? (
             <View
               style={{
-                backgroundColor: "#EEF3FD",
+                backgroundColor: colors.primarySurface,
                 borderRadius: 7,
                 padding: 12,
                 marginBottom: 14,
               }}
             >
-              <Text style={{ color: "#385884" }}>{mensagem}</Text>
+              <Text style={{ color: colors.primary }}>{mensagem}</Text>
             </View>
           ) : null}
 
@@ -299,15 +349,23 @@ export default function LoginWeb() {
             style={{
               minHeight: 50,
               borderRadius: 8,
-              backgroundColor: carregando ? "#779BE8" : "#2F6FED",
+              backgroundColor: carregando
+                ? colors.borderStrong
+                : colors.primary,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
             {carregando ? (
-              <ActivityIndicator color="white" />
+              <ActivityIndicator color={colors.primaryText} />
             ) : (
-              <Text style={{ color: "white", fontWeight: "bold", fontSize: 15 }}>
+              <Text
+                style={{
+                  color: colors.primaryText,
+                  fontWeight: "bold",
+                  fontSize: 15,
+                }}
+              >
                 Entrar
               </Text>
             )}
@@ -317,21 +375,3 @@ export default function LoginWeb() {
     </View>
   );
 }
-
-const campoContainer = {
-  minHeight: 50,
-  borderWidth: 1,
-  borderColor: "#D5DBE5",
-  borderRadius: 8,
-  backgroundColor: "white",
-  paddingHorizontal: 13,
-  flexDirection: "row" as const,
-  alignItems: "center" as const,
-  gap: 9,
-};
-
-const campo = {
-  flex: 1,
-  color: "#172033",
-  paddingVertical: 13,
-};

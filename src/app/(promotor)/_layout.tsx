@@ -12,7 +12,7 @@ export default function PromotorLayout() {
   });
 
   if (carregando || !perfil) {
-    return <TelaCarregandoAuth backgroundColor="#0F1115" color="#8CB1FA" />;
+    return <TelaCarregandoAuth />;
   }
 
   return <Slot />;

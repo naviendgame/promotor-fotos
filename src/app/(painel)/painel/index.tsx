@@ -20,28 +20,32 @@ import { ROTAS } from "@/constants/routes";
 import { fotosCollection } from "@/services/fotos-service";
 import { lojasCollection } from "@/services/lojas-service";
 import { consultaPromotores } from "@/services/usuarios-service";
+import { useTheme } from "@/theme/theme-context";
+import type { ThemeColors } from "@/theme/colors";
 import type { Foto } from "@/types/foto";
 import { obterData } from "@/utils/datas";
 import {
   filtrarFotosAtuais,
   ordenarFotosRecentes,
 } from "@/utils/fotos";
+import { visualStatusPorTema } from "@/utils/status-foto";
 
 type IndicadorProps = {
+  colors: ThemeColors;
   titulo: string;
   valor: number;
   icone: keyof typeof MaterialIcons.glyphMap;
   cor: string;
 };
 
-function Indicador({ titulo, valor, icone, cor }: IndicadorProps) {
+function Indicador({ colors, titulo, valor, icone, cor }: IndicadorProps) {
   return (
     <View
       style={{
         minWidth: 155,
         flexGrow: 1,
         borderLeftWidth: 1,
-        borderLeftColor: "#D9E3F3",
+        borderLeftColor: colors.border,
         paddingLeft: 16,
         gap: 8,
       }}
@@ -54,11 +58,11 @@ function Indicador({ titulo, valor, icone, cor }: IndicadorProps) {
         }}
       >
         <MaterialIcons name={icone} size={18} color={cor} />
-        <Text style={{ color: "#66758A", fontSize: 13 }}>{titulo}</Text>
+        <Text style={{ color: colors.textSubtle, fontSize: 13 }}>{titulo}</Text>
       </View>
       <Text
         style={{
-          color: "#172033",
+          color: colors.text,
           fontSize: 28,
           fontWeight: "bold",
           fontVariant: ["tabular-nums"],
@@ -71,6 +75,7 @@ function Indicador({ titulo, valor, icone, cor }: IndicadorProps) {
 }
 
 export default function PainelDashboard() {
+  const { colors, scheme } = useTheme();
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [totalLojas, setTotalLojas] = useState(0);
   const [totalPromotores, setTotalPromotores] = useState(0);
@@ -90,17 +95,11 @@ export default function PainelDashboard() {
       setTotalLojas(snapshot.size);
     });
 
-    const unsubscribeUsuarios = onSnapshot(
-      consultaPromotores(),
-      (snapshot) => {
-        setTotalPromotores(
-          snapshot.docs.filter(
-            (item) =>
-              item.data().ativo !== false,
-          ).length,
-        );
-      },
-    );
+    const unsubscribeUsuarios = onSnapshot(consultaPromotores(), (snapshot) => {
+      setTotalPromotores(
+        snapshot.docs.filter((item) => item.data().ativo !== false).length,
+      );
+    });
 
     return () => {
       unsubscribeFotos();
@@ -137,12 +136,19 @@ export default function PainelDashboard() {
   const totalAvaliadas = resumo.aprovadas + resumo.refazer + resumo.rejeitadas;
   const totalFotos = fotos.length;
   const percentualAprovadas =
-    totalAvaliadas > 0 ? Math.round((resumo.aprovadas / totalAvaliadas) * 100) : 0;
+    totalAvaliadas > 0
+      ? Math.round((resumo.aprovadas / totalAvaliadas) * 100)
+      : 0;
   const status = [
-    { nome: "Aprovadas", valor: resumo.aprovadas, cor: "#24864B" },
-    { nome: "Refazer", valor: resumo.refazer, cor: "#BD7813" },
-    { nome: "Rejeitadas", valor: resumo.rejeitadas, cor: "#BA3340" },
+    { nome: "Aprovadas", valor: resumo.aprovadas, cor: colors.success },
+    { nome: "Refazer", valor: resumo.refazer, cor: colors.warning },
+    { nome: "Rejeitadas", valor: resumo.rejeitadas, cor: colors.danger },
   ];
+
+  const sombraCard =
+    scheme === "light"
+      ? "0 14px 34px rgba(37, 99, 235, 0.10)"
+      : "0 14px 34px rgba(0, 0, 0, 0.4)";
 
   return (
     <ScrollView
@@ -155,13 +161,13 @@ export default function PainelDashboard() {
         entering={FadeInDown.duration(280)}
         layout={LinearTransition.duration(200)}
         style={{
-          backgroundColor: "white",
+          backgroundColor: colors.surface,
           borderWidth: 1,
-          borderColor: "#DDE6F3",
+          borderColor: colors.border,
           borderRadius: 8,
           padding: width < 760 ? 18 : 24,
           gap: 22,
-          boxShadow: "0 14px 34px rgba(37, 99, 235, 0.10)",
+          boxShadow: sombraCard,
         }}
       >
         <View
@@ -176,7 +182,7 @@ export default function PainelDashboard() {
               style={{
                 alignSelf: "flex-start",
                 borderRadius: 8,
-                backgroundColor: "#EAF1FF",
+                backgroundColor: colors.primarySurface,
                 paddingHorizontal: 10,
                 paddingVertical: 6,
                 flexDirection: "row",
@@ -184,15 +190,23 @@ export default function PainelDashboard() {
                 gap: 7,
               }}
             >
-              <MaterialIcons name="bolt" size={17} color="#2563EB" />
-              <Text style={{ color: "#2563EB", fontWeight: "bold", fontSize: 12 }}>
+              <MaterialIcons name="bolt" size={17} color={colors.primary} />
+              <Text
+                style={{
+                  color: colors.primary,
+                  fontWeight: "bold",
+                  fontSize: 12,
+                }}
+              >
                 Ao vivo
               </Text>
             </View>
-            <Text style={{ color: "#172033", fontSize: 28, fontWeight: "bold" }}>
+            <Text
+              style={{ color: colors.text, fontSize: 28, fontWeight: "bold" }}
+            >
               Operacao em andamento
             </Text>
-            <Text style={{ color: "#66758A", lineHeight: 21 }}>
+            <Text style={{ color: colors.textSubtle, lineHeight: 21 }}>
               Acompanhe recebimento, pendencias e qualidade das analises sem
               perder o contexto da rotina de campo.
             </Text>
@@ -246,28 +260,32 @@ export default function PainelDashboard() {
           }}
         >
           <Indicador
+            colors={colors}
             titulo="Recebidas hoje"
             valor={resumo.fotosHoje}
             icone="photo-camera"
-            cor="#2563EB"
+            cor={colors.primary}
           />
           <Indicador
+            colors={colors}
             titulo="Pendentes"
             valor={resumo.pendentes}
             icone="schedule"
             cor="#7C3AED"
           />
           <Indicador
+            colors={colors}
             titulo="Promotores ativos"
             valor={totalPromotores}
             icone="groups"
-            cor="#0F766E"
+            cor={colors.success}
           />
           <Indicador
+            colors={colors}
             titulo="Lojas"
             valor={totalLojas}
             icone="store"
-            cor="#EA580C"
+            cor={colors.warning}
           />
         </View>
       </Animated.View>
@@ -283,9 +301,9 @@ export default function PainelDashboard() {
         <View
           style={{
             flex: 1.2,
-            backgroundColor: "white",
+            backgroundColor: colors.surface,
             borderWidth: 1,
-            borderColor: "#DDE6F3",
+            borderColor: colors.border,
             borderRadius: 8,
             padding: 18,
           }}
@@ -299,17 +317,29 @@ export default function PainelDashboard() {
             }}
           >
             <View>
-              <Text style={{ color: "#172033", fontSize: 17, fontWeight: "bold" }}>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 17,
+                  fontWeight: "bold",
+                }}
+              >
                 Qualidade das avaliacoes
               </Text>
-              <Text style={{ color: "#718096", fontSize: 13, paddingTop: 3 }}>
+              <Text
+                style={{
+                  color: colors.textSubtle,
+                  fontSize: 13,
+                  paddingTop: 3,
+                }}
+              >
                 Distribuicao das fotos ja analisadas
               </Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
               <Text
                 style={{
-                  color: "#24864B",
+                  color: colors.success,
                   fontSize: 24,
                   fontWeight: "bold",
                   fontVariant: ["tabular-nums"],
@@ -317,7 +347,9 @@ export default function PainelDashboard() {
               >
                 {percentualAprovadas}%
               </Text>
-              <Text style={{ color: "#718096", fontSize: 12 }}>aprovadas</Text>
+              <Text style={{ color: colors.textSubtle, fontSize: 12 }}>
+                aprovadas
+              </Text>
             </View>
           </View>
 
@@ -334,10 +366,10 @@ export default function PainelDashboard() {
                       justifyContent: "space-between",
                     }}
                   >
-                    <Text style={{ color: "#4B586D" }}>{item.nome}</Text>
+                    <Text style={{ color: colors.textMuted }}>{item.nome}</Text>
                     <Text
                       style={{
-                        color: "#172033",
+                        color: colors.text,
                         fontWeight: "bold",
                         fontVariant: ["tabular-nums"],
                       }}
@@ -349,7 +381,7 @@ export default function PainelDashboard() {
                     style={{
                       height: 8,
                       borderRadius: 4,
-                      backgroundColor: "#EEF3FA",
+                      backgroundColor: colors.surfaceElevated,
                       overflow: "hidden",
                     }}
                   >
@@ -370,14 +402,16 @@ export default function PainelDashboard() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "white",
+            backgroundColor: colors.surface,
             borderWidth: 1,
-            borderColor: "#DDE6F3",
+            borderColor: colors.border,
             borderRadius: 8,
             padding: 18,
           }}
         >
-          <Text style={{ color: "#172033", fontSize: 17, fontWeight: "bold" }}>
+          <Text
+            style={{ color: colors.text, fontSize: 17, fontWeight: "bold" }}
+          >
             Proximas acoes
           </Text>
           <View style={{ gap: 9, paddingTop: 16 }}>
@@ -404,23 +438,27 @@ export default function PainelDashboard() {
                 style={{
                   minHeight: 48,
                   borderWidth: 1,
-                  borderColor: "#DDE6F3",
+                  borderColor: colors.border,
                   borderRadius: 7,
                   paddingHorizontal: 13,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 10,
-                  backgroundColor: "#F8FAFF",
+                  backgroundColor: colors.surfaceElevated,
                 }}
               >
-                <MaterialIcons name={acao.icone} size={21} color="#2563EB" />
-                <Text style={{ color: "#263247", fontWeight: "bold" }}>
+                <MaterialIcons
+                  name={acao.icone}
+                  size={21}
+                  color={colors.primary}
+                />
+                <Text style={{ color: colors.text, fontWeight: "bold" }}>
                   {acao.titulo}
                 </Text>
                 <MaterialIcons
                   name="chevron-right"
                   size={20}
-                  color="#8A96A9"
+                  color={colors.iconMuted}
                   style={{ marginLeft: "auto" }}
                 />
               </Pressable>
@@ -432,9 +470,9 @@ export default function PainelDashboard() {
       <Animated.View
         entering={FadeInUp.duration(260).delay(140)}
         style={{
-          backgroundColor: "white",
+          backgroundColor: colors.surface,
           borderWidth: 1,
-          borderColor: "#DDE6F3",
+          borderColor: colors.border,
           borderRadius: 8,
           overflow: "hidden",
         }}
@@ -443,7 +481,7 @@ export default function PainelDashboard() {
           style={{
             padding: 18,
             borderBottomWidth: 1,
-            borderBottomColor: "#E7EEF8",
+            borderBottomColor: colors.border,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
@@ -451,16 +489,22 @@ export default function PainelDashboard() {
         >
           <View>
             <Text
-              style={{ color: "#172033", fontSize: 17, fontWeight: "bold" }}
+              style={{ color: colors.text, fontSize: 17, fontWeight: "bold" }}
             >
               Envios recentes
             </Text>
-            <Text style={{ color: "#718096", fontSize: 13, paddingTop: 3 }}>
+            <Text
+              style={{
+                color: colors.textSubtle,
+                fontSize: 13,
+                paddingTop: 3,
+              }}
+            >
               Ultimas fotos recebidas
             </Text>
           </View>
           <Pressable onPress={() => router.push(ROTAS.painelFotos)}>
-            <Text style={{ color: "#2563EB", fontWeight: "bold" }}>
+            <Text style={{ color: colors.primary, fontWeight: "bold" }}>
               Ver todas
             </Text>
           </Pressable>
@@ -469,6 +513,7 @@ export default function PainelDashboard() {
         {fotos.slice(0, 5).map((foto, indice) => {
           const data = obterData(foto.criadoEm);
           const statusFoto = foto.status || "pendente";
+          const visual = visualStatusPorTema(statusFoto, scheme);
 
           return (
             <View
@@ -479,21 +524,27 @@ export default function PainelDashboard() {
                 paddingVertical: 12,
                 borderBottomWidth:
                   indice < Math.min(fotos.length, 5) - 1 ? 1 : 0,
-                borderBottomColor: "#EEF3FA",
+                borderBottomColor: colors.border,
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 14,
               }}
             >
               <View style={{ flex: 1.2 }}>
-                <Text style={{ color: "#263247", fontWeight: "bold" }}>
+                <Text style={{ color: colors.text, fontWeight: "bold" }}>
                   {foto.lojaNome || "Loja nao informada"}
                 </Text>
-                <Text style={{ color: "#718096", fontSize: 12, paddingTop: 3 }}>
+                <Text
+                  style={{
+                    color: colors.textSubtle,
+                    fontSize: 12,
+                    paddingTop: 3,
+                  }}
+                >
                   {foto.promotorNome || foto.promotorEmail || "Promotor"}
                 </Text>
               </View>
-              <Text style={{ flex: 0.8, color: "#66758A" }}>
+              <Text style={{ flex: 0.8, color: colors.textMuted }}>
                 {foto.categoria || "Sem categoria"}
               </Text>
               <View
@@ -502,14 +553,7 @@ export default function PainelDashboard() {
                   borderRadius: 5,
                   paddingVertical: 5,
                   paddingHorizontal: 8,
-                  backgroundColor:
-                    statusFoto === "aprovada"
-                      ? "#E5F5EB"
-                      : statusFoto === "rejeitada"
-                        ? "#FCE8EA"
-                        : statusFoto === "refazer"
-                          ? "#FFF2DD"
-                          : "#E8EFFD",
+                  backgroundColor: visual.fundo,
                 }}
               >
                 <Text
@@ -517,14 +561,7 @@ export default function PainelDashboard() {
                     textAlign: "center",
                     fontSize: 12,
                     fontWeight: "bold",
-                    color:
-                      statusFoto === "aprovada"
-                        ? "#24864B"
-                        : statusFoto === "rejeitada"
-                          ? "#BA3340"
-                          : statusFoto === "refazer"
-                            ? "#A8660B"
-                            : "#2F6FED",
+                    color: visual.texto,
                   }}
                 >
                   {statusFoto}
@@ -533,7 +570,7 @@ export default function PainelDashboard() {
               <Text
                 style={{
                   width: 118,
-                  color: "#718096",
+                  color: colors.textSubtle,
                   fontSize: 12,
                   textAlign: "right",
                 }}
@@ -545,7 +582,7 @@ export default function PainelDashboard() {
         })}
 
         {fotos.length === 0 ? (
-          <Text style={{ color: "#718096", padding: 18 }}>
+          <Text style={{ color: colors.textSubtle, padding: 18 }}>
             Nenhuma foto recebida.
           </Text>
         ) : null}
