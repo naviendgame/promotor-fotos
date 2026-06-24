@@ -11,6 +11,7 @@ import {
 
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { signOut } from "firebase/auth";
 import { onSnapshot } from "firebase/firestore";
 import Svg, {
   Circle,
@@ -1065,7 +1066,7 @@ function BotaoAcao({
   );
 }
 
-function _BottomNavLegacy({
+function BottomNavLegacy({
   colors,
   tipoUsuario,
 }: {

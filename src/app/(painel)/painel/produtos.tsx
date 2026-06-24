@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 
 import { MaterialIcons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import {
   onSnapshot,
   serverTimestamp,
@@ -16,9 +18,9 @@ import {
   consultaProdutosOrdenados,
   criarProduto,
 } from "@/services/produtos-service";
-import { useTheme } from "@/theme/theme-context";
 import type { ThemeColors } from "@/theme/colors";
 import type { Produto } from "@/types/produto";
+import { prepararImagemBase64 } from "@/utils/imagem";
 
 import {
   Cabecalho,
@@ -32,19 +34,15 @@ import {
 type ProdutoForm = {
   codigo: string;
   nome: string;
-  complemento: string;
   marca: string;
-  fornecedor: string;
-  categoria: string;
+  imagemBase64: string;
 };
 
 const FORMULARIO_VAZIO: ProdutoForm = {
   codigo: "",
   nome: "",
-  complemento: "",
   marca: "",
-  fornecedor: "",
-  categoria: "",
+  imagemBase64: "",
 };
 
 export default function ProdutosPainel() {
@@ -56,6 +54,8 @@ export default function ProdutosPainel() {
   const [editado, setEditado] = useState<Produto | null>(null);
   const [formulario, setFormulario] = useState<ProdutoForm>(FORMULARIO_VAZIO);
   const [salvando, setSalvando] = useState(false);
+  const [processandoFoto, setProcessandoFoto] = useState(false);
+  const [mensagemModal, setMensagemModal] = useState("");
 
   useEffect(() => {
     return onSnapshot(consultaProdutosOrdenados(), (snapshot) => {
@@ -73,14 +73,7 @@ export default function ProdutosPainel() {
     if (!termo) return produtos;
 
     return produtos.filter((produto) =>
-      [
-        produto.codigo,
-        produto.nome,
-        produto.complemento,
-        produto.marca,
-        produto.fornecedor,
-        produto.categoria,
-      ]
+      [produto.codigo, produto.nome, produto.marca]
         .join(" ")
         .toLocaleLowerCase("pt-BR")
         .includes(termo),
@@ -94,6 +87,7 @@ export default function ProdutosPainel() {
   function abrirCadastro() {
     setEditado(null);
     setFormulario(FORMULARIO_VAZIO);
+    setMensagemModal("");
     setModalAberto(true);
   }
 
@@ -102,35 +96,58 @@ export default function ProdutosPainel() {
     setFormulario({
       codigo: produto.codigo || "",
       nome: produto.nome || "",
-      complemento: produto.complemento || "",
       marca: produto.marca || "",
-      fornecedor: produto.fornecedor || "",
-      categoria: produto.categoria || "",
+      imagemBase64: produto.imagemBase64 || "",
     });
+    setMensagemModal("");
     setModalAberto(true);
   }
 
-  async function salvarProduto() {
-    const nome = formulario.nome.trim();
+  async function escolherFoto() {
+    try {
+      setProcessandoFoto(true);
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 0.7,
+        allowsEditing: false,
+      });
 
-    if (!nome) {
-      Alert.alert("Atencao", "Informe o nome do produto.");
+      if (!resultado.canceled) {
+        const imagemBase64 = await prepararImagemBase64(resultado.assets[0].uri);
+        atualizarCampo("imagemBase64", imagemBase64);
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Foto do produto",
+        error.message || "Nao foi possivel anexar a foto.",
+      );
+    } finally {
+      setProcessandoFoto(false);
+    }
+  }
+
+  async function salvarProduto() {
+    const codigo = formulario.codigo.trim();
+    const nome = formulario.nome.trim();
+    const marca = formulario.marca.trim();
+
+    if (!codigo || !nome || !marca) {
+      setMensagemModal("Preencha codigo, nome e marca antes de salvar.");
       return;
     }
 
     const dados = {
-      codigo: formulario.codigo.trim(),
+      codigo,
       nome,
-      complemento: formulario.complemento.trim(),
-      marca: formulario.marca.trim(),
-      fornecedor: formulario.fornecedor.trim(),
-      categoria: formulario.categoria.trim(),
+      marca,
+      imagemBase64: formulario.imagemBase64,
       ativo: editado?.ativo === false ? false : true,
       atualizadoEm: serverTimestamp(),
     };
 
     try {
       setSalvando(true);
+      setMensagemModal("Salvando produto...");
 
       if (editado) {
         await atualizarProduto(editado.id, dados);
@@ -144,8 +161,15 @@ export default function ProdutosPainel() {
       setModalAberto(false);
       setEditado(null);
       setFormulario(FORMULARIO_VAZIO);
+      setMensagemModal("");
     } catch (error: any) {
-      Alert.alert("Erro", error.message || "Nao foi possivel salvar.");
+      console.log(error);
+      const mensagem =
+        error?.code === "permission-denied"
+          ? "Sem permissao para salvar produtos. Atualize as regras do Firestore no Firebase Console."
+          : error?.message || "Nao foi possivel salvar o produto.";
+      setMensagemModal(mensagem);
+      Alert.alert("Erro", mensagem);
     } finally {
       setSalvando(false);
     }
@@ -176,7 +200,7 @@ export default function ProdutosPainel() {
       <CampoBusca
         valor={busca}
         onChange={setBusca}
-        placeholder="Buscar por codigo, produto ou fornecedor"
+        placeholder="Buscar por codigo, produto ou marca"
       />
 
       <Animated.View
@@ -185,9 +209,9 @@ export default function ProdutosPainel() {
         style={estilos.tabela}
       >
         <View style={estilos.cabecalhoTabela}>
+          <Text style={[estilos.celulaCabecalho, { flex: 1.6 }]}>PRODUTO</Text>
           <Text style={[estilos.celulaCabecalho, { flex: 0.7 }]}>CODIGO</Text>
-          <Text style={[estilos.celulaCabecalho, { flex: 1.5 }]}>PRODUTO</Text>
-          <Text style={estilos.celulaCabecalho}>FORNECEDOR</Text>
+          <Text style={estilos.celulaCabecalho}>MARCA</Text>
           <Text style={[estilos.celulaCabecalho, { flex: 0.6 }]}>STATUS</Text>
           <Text style={[estilos.celulaCabecalho, { flex: 0.8 }]}>ACOES</Text>
         </View>
@@ -205,24 +229,15 @@ export default function ProdutosPainel() {
                 { borderBottomWidth: indice < filtrados.length - 1 ? 1 : 0 },
               ]}
             >
-              <Text selectable style={[estilos.celula, { flex: 0.7 }]}>
-                {produto.codigo || "-"}
-              </Text>
               <View
                 style={{
-                  flex: 1.5,
+                  flex: 1.6,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 10,
                 }}
               >
-                <View style={estilos.iconeLinha}>
-                  <MaterialIcons
-                    name="inventory-2"
-                    size={19}
-                    color={colors.primary}
-                  />
-                </View>
+                <MiniaturaProduto produto={produto} colors={colors} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.text, fontWeight: "bold" }}>
                     {produto.nome}
@@ -234,12 +249,15 @@ export default function ProdutosPainel() {
                       paddingTop: 3,
                     }}
                   >
-                    {produto.complemento || produto.marca || "Sem complemento"}
+                    {produto.imagemBase64 ? "Com foto" : "Sem foto"}
                   </Text>
                 </View>
               </View>
+              <Text selectable style={[estilos.celula, { flex: 0.7 }]}>
+                {produto.codigo || "-"}
+              </Text>
               <Text numberOfLines={2} style={estilos.celula}>
-                {produto.fornecedor || "-"}
+                {produto.marca || "-"}
               </Text>
               <View style={{ flex: 0.6 }}>
                 <Text style={ativo ? estilos.badgeAtivo : estilos.badgeInativo}>
@@ -274,7 +292,7 @@ export default function ProdutosPainel() {
         titulo={editado ? "Editar produto" : "Cadastrar produto"}
         onClose={() => setModalAberto(false)}
         onSave={salvarProduto}
-        salvando={salvando}
+        salvando={salvando || processandoFoto}
       >
         <Campo
           rotulo="Codigo"
@@ -287,27 +305,213 @@ export default function ProdutosPainel() {
           onChange={(valor) => atualizarCampo("nome", valor)}
         />
         <Campo
-          rotulo="Complemento / variacao"
-          valor={formulario.complemento}
-          onChange={(valor) => atualizarCampo("complemento", valor)}
-        />
-        <Campo
           rotulo="Marca"
           valor={formulario.marca}
           onChange={(valor) => atualizarCampo("marca", valor)}
         />
-        <Campo
-          rotulo="Fornecedor"
-          valor={formulario.fornecedor}
-          onChange={(valor) => atualizarCampo("fornecedor", valor)}
-        />
-        <Campo
-          rotulo="Categoria / setor"
-          valor={formulario.categoria}
-          onChange={(valor) => atualizarCampo("categoria", valor)}
+
+        {mensagemModal ? (
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: mensagemModal.includes("Salvando")
+                ? colors.border
+                : colors.danger,
+              backgroundColor: mensagemModal.includes("Salvando")
+                ? colors.surfaceElevated
+                : colors.dangerSurface,
+              borderRadius: 8,
+              padding: 11,
+            }}
+          >
+            <Text
+              style={{
+                color: mensagemModal.includes("Salvando")
+                  ? colors.textMuted
+                  : colors.dangerText,
+                fontWeight: "bold",
+              }}
+            >
+              {mensagemModal}
+            </Text>
+          </View>
+        ) : null}
+
+        <FotoProduto
+          colors={colors}
+          imagemBase64={formulario.imagemBase64}
+          processando={processandoFoto}
+          onEscolher={escolherFoto}
+          onRemover={() => atualizarCampo("imagemBase64", "")}
         />
       </FormularioModal>
     </ScrollView>
+  );
+}
+
+function MiniaturaProduto({
+  produto,
+  colors,
+}: {
+  produto: Produto;
+  colors: ThemeColors;
+}) {
+  if (produto.imagemBase64) {
+    return (
+      <Image
+        source={{ uri: produto.imagemBase64 }}
+        contentFit="cover"
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: 8,
+          backgroundColor: colors.surfaceElevated,
+        }}
+      />
+    );
+  }
+
+  return (
+    <View
+      style={{
+        width: 42,
+        height: 42,
+        borderRadius: 8,
+        backgroundColor: colors.primarySurface,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <MaterialIcons name="inventory-2" size={20} color={colors.primary} />
+    </View>
+  );
+}
+
+function FotoProduto({
+  colors,
+  imagemBase64,
+  processando,
+  onEscolher,
+  onRemover,
+}: {
+  colors: ThemeColors;
+  imagemBase64: string;
+  processando: boolean;
+  onEscolher: () => void;
+  onRemover: () => void;
+}) {
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={{ color: colors.textMuted, fontWeight: "bold" }}>
+        Foto do produto
+      </Text>
+
+      <View
+        style={{
+          minHeight: 132,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderStyle: "dashed",
+          borderColor: colors.border,
+          backgroundColor: colors.backgroundAlt,
+          padding: 12,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 13,
+        }}
+      >
+        {imagemBase64 ? (
+          <Image
+            source={{ uri: imagemBase64 }}
+            contentFit="cover"
+            style={{
+              width: 108,
+              height: 108,
+              borderRadius: 8,
+              backgroundColor: colors.surfaceElevated,
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              width: 108,
+              height: 108,
+              borderRadius: 8,
+              backgroundColor: colors.primarySurface,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MaterialIcons
+              name="add-photo-alternate"
+              size={34}
+              color={colors.primary}
+            />
+          </View>
+        )}
+
+        <View style={{ flex: 1, gap: 9 }}>
+          <Text style={{ color: colors.textSubtle, lineHeight: 19 }}>
+            Opcional. A foto ajuda o promotor a identificar o produto na hora
+            de registrar estoque, ruptura ou devolucao.
+          </Text>
+
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <Pressable
+              onPress={onEscolher}
+              disabled={processando}
+              style={{
+                minHeight: 38,
+                borderRadius: 7,
+                backgroundColor: colors.primary,
+                paddingHorizontal: 12,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 7,
+                opacity: processando ? 0.65 : 1,
+              }}
+            >
+              <MaterialIcons
+                name="photo-library"
+                size={18}
+                color={colors.primaryText}
+              />
+              <Text style={{ color: colors.primaryText, fontWeight: "bold" }}>
+                {processando ? "Carregando..." : "Adicionar foto"}
+              </Text>
+            </Pressable>
+
+            {imagemBase64 ? (
+              <Pressable
+                onPress={onRemover}
+                disabled={processando}
+                style={{
+                  minHeight: 38,
+                  borderRadius: 7,
+                  borderWidth: 1,
+                  borderColor: colors.danger,
+                  paddingHorizontal: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 7,
+                }}
+              >
+                <MaterialIcons
+                  name="delete-outline"
+                  size={18}
+                  color={colors.danger}
+                />
+                <Text style={{ color: colors.danger, fontWeight: "bold" }}>
+                  Remover
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      </View>
+    </View>
   );
 }
 

@@ -47,6 +47,19 @@ const LIMITE_OBSERVACAO = 300;
 
 type EtapaEnvio = "preparando" | "enviando" | null;
 
+type ItemOcorrenciaFormulario = Omit<
+  ItemOcorrenciaEstoque,
+  | "estoqueLoja"
+  | "estoqueDisponivel"
+  | "quantidadeRuptura"
+  | "quantidadeAvaria"
+> & {
+  estoqueLoja?: string;
+  estoqueDisponivel?: string;
+  quantidadeRuptura?: string;
+  quantidadeAvaria?: string;
+};
+
 export default function EnviarFoto() {
   const { colors } = useTheme();
   const parametros = useLocalSearchParams<{
@@ -75,17 +88,8 @@ export default function EnviarFoto() {
   const [envioConcluido, setEnvioConcluido] = useState(false);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [buscaProduto, setBuscaProduto] = useState("");
-  const [produtoSelecionadoId, setProdutoSelecionadoId] = useState("");
-  const [estoqueLoja, setEstoqueLoja] = useState("");
-  const [estoqueDisponivel, setEstoqueDisponivel] = useState("");
-  const [ruptura, setRuptura] = useState(false);
-  const [quantidadeRuptura, setQuantidadeRuptura] = useState("");
-  const [quantidadeAvaria, setQuantidadeAvaria] = useState("");
-  const [motivoAvaria, setMotivoAvaria] = useState(MOTIVOS_AVARIA[0]);
-  const [destinoAvaria, setDestinoAvaria] = useState(DESTINOS_AVARIA[0]);
-  const [observacaoItem, setObservacaoItem] = useState("");
   const [itensOcorrencia, setItensOcorrencia] = useState<
-    ItemOcorrenciaEstoque[]
+    ItemOcorrenciaFormulario[]
   >([]);
 
   const enviando = etapaEnvio !== null;
@@ -97,31 +101,37 @@ export default function EnviarFoto() {
     (!exigeOcorrencia || itensOcorrencia.length > 0) &&
     !enviando;
   const categoriaExibicao = nomeCategoriaFoto(categoria);
-  const produtoSelecionado = produtos.find(
-    (produto) => produto.id === produtoSelecionadoId,
-  );
 
   const produtosFiltrados = useMemo(() => {
     const termo = buscaProduto.trim().toLocaleLowerCase("pt-BR");
     const ativos = produtos.filter((produto) => produto.ativo !== false);
+    const produtosSelecionadosIds = new Set(
+      itensOcorrencia.map((item) => item.produtoId),
+    );
+    const selecionados = ativos.filter((produto) =>
+      produtosSelecionadosIds.has(produto.id),
+    );
 
-    if (!termo) return ativos.slice(0, 8);
+    const resultados = !termo
+      ? ativos
+      : ativos.filter((produto) =>
+          [
+            produto.codigo,
+            produto.nome,
+            produto.marca,
+          ]
+            .join(" ")
+            .toLocaleLowerCase("pt-BR")
+            .includes(termo),
+        );
 
-    return ativos
-      .filter((produto) =>
-        [
-          produto.codigo,
-          produto.nome,
-          produto.complemento,
-          produto.marca,
-          produto.fornecedor,
-        ]
-          .join(" ")
-          .toLocaleLowerCase("pt-BR")
-          .includes(termo),
-      )
-      .slice(0, 8);
-  }, [buscaProduto, produtos]);
+    return [
+      ...selecionados,
+      ...resultados
+        .filter((produto) => !produtosSelecionadosIds.has(produto.id))
+        .slice(0, Math.max(0, 8 - selecionados.length)),
+    ];
+  }, [buscaProduto, itensOcorrencia, produtos]);
 
   useEffect(() => {
     return onSnapshot(consultaProdutosAtivos(), (snapshot) => {
@@ -135,16 +145,7 @@ export default function EnviarFoto() {
   }, []);
 
   useEffect(() => {
-    setProdutoSelecionadoId("");
     setBuscaProduto("");
-    setEstoqueLoja("");
-    setEstoqueDisponivel("");
-    setRuptura(false);
-    setQuantidadeRuptura("");
-    setQuantidadeAvaria("");
-    setMotivoAvaria(MOTIVOS_AVARIA[0]);
-    setDestinoAvaria(DESTINOS_AVARIA[0]);
-    setObservacaoItem("");
     setItensOcorrencia([]);
   }, [tipoOcorrencia]);
 
@@ -199,50 +200,63 @@ export default function EnviarFoto() {
   }
 
   function limparFormularioItem() {
-    setProdutoSelecionadoId("");
     setBuscaProduto("");
-    setEstoqueLoja("");
-    setEstoqueDisponivel("");
-    setRuptura(false);
-    setQuantidadeRuptura("");
-    setQuantidadeAvaria("");
-    setMotivoAvaria(MOTIVOS_AVARIA[0]);
-    setDestinoAvaria(DESTINOS_AVARIA[0]);
-    setObservacaoItem("");
+    setItensOcorrencia([]);
   }
 
-  function adicionarItemOcorrencia() {
-    if (!produtoSelecionado || !tipoOcorrencia) {
-      Alert.alert("Produto", "Selecione um produto para adicionar.");
-      return;
-    }
-
+  function criarItemOcorrenciaFormulario(
+    produto: Produto,
+  ): ItemOcorrenciaFormulario {
     const itemBase = {
-      produtoId: produtoSelecionado.id,
-      codigo: produtoSelecionado.codigo || "",
-      nome: produtoSelecionado.nome,
-      complemento: produtoSelecionado.complemento || "",
-      observacao: observacaoItem.trim(),
+      produtoId: produto.id,
+      codigo: produto.codigo || "",
+      nome: produto.nome,
+      complemento: produto.marca || "",
+      observacao: "",
     };
 
-    const item: ItemOcorrenciaEstoque =
-      tipoOcorrencia === "avaria"
-        ? {
-            ...itemBase,
-            quantidadeAvaria: numeroOuZero(quantidadeAvaria),
-            motivoAvaria,
-            destinoAvaria,
-          }
-        : {
-            ...itemBase,
-            estoqueLoja: numeroOuZero(estoqueLoja),
-            estoqueDisponivel: numeroOuZero(estoqueDisponivel),
-            ruptura,
-            quantidadeRuptura: ruptura ? numeroOuZero(quantidadeRuptura) : 0,
-          };
+    if (tipoOcorrencia === "avaria") {
+      return {
+        ...itemBase,
+        quantidadeAvaria: "",
+        motivoAvaria: MOTIVOS_AVARIA[0],
+        destinoAvaria: DESTINOS_AVARIA[0],
+      };
+    }
 
-    setItensOcorrencia((atuais) => [...atuais, item]);
-    limparFormularioItem();
+    return {
+      ...itemBase,
+      estoqueLoja: "",
+      estoqueDisponivel: "",
+      ruptura: false,
+      quantidadeRuptura: "",
+    };
+  }
+
+  function alternarProdutoOcorrencia(produto: Produto) {
+    if (enviando || !tipoOcorrencia) return;
+
+    setItensOcorrencia((atuais) => {
+      const jaSelecionado = atuais.some((item) => item.produtoId === produto.id);
+
+      if (jaSelecionado) {
+        return atuais.filter((item) => item.produtoId !== produto.id);
+      }
+
+      return [...atuais, criarItemOcorrenciaFormulario(produto)];
+    });
+  }
+
+  function atualizarItemOcorrencia<K extends keyof ItemOcorrenciaFormulario>(
+    indice: number,
+    campo: K,
+    valor: ItemOcorrenciaFormulario[K],
+  ) {
+    setItensOcorrencia((atuais) =>
+      atuais.map((item, itemIndice) =>
+        itemIndice === indice ? { ...item, [campo]: valor } : item,
+      ),
+    );
   }
 
   function removerItemOcorrencia(indice: number) {
@@ -252,12 +266,48 @@ export default function EnviarFoto() {
     );
   }
 
+  function indiceItemOcorrencia(produtoId: string) {
+    return itensOcorrencia.findIndex((item) => item.produtoId === produtoId);
+  }
+
+  function normalizarItensOcorrencia(): ItemOcorrenciaEstoque[] {
+    return itensOcorrencia.map((item) => {
+      const itemBase = {
+        produtoId: item.produtoId,
+        codigo: item.codigo || "",
+        nome: item.nome,
+        complemento: item.complemento || "",
+        observacao: item.observacao?.trim() || "",
+      };
+
+      if (tipoOcorrencia === "avaria") {
+        return {
+          ...itemBase,
+          quantidadeAvaria: numeroOuZero(item.quantidadeAvaria || ""),
+          motivoAvaria: item.motivoAvaria || MOTIVOS_AVARIA[0],
+          destinoAvaria: item.destinoAvaria || DESTINOS_AVARIA[0],
+        };
+      }
+
+      return {
+        ...itemBase,
+        estoqueLoja: numeroOuZero(item.estoqueLoja || ""),
+        estoqueDisponivel: numeroOuZero(item.estoqueDisponivel || ""),
+        ruptura: !!item.ruptura,
+        quantidadeRuptura: item.ruptura
+          ? numeroOuZero(item.quantidadeRuptura || "")
+          : 0,
+      };
+    });
+  }
+
   async function enviarFoto() {
     const categoriaSelecionada = categoria;
 
     if (!formularioValido || !imagem || !categoriaSelecionada) return;
     const tipoOcorrenciaSelecionada =
       tipoOcorrenciaPorCategoria(categoriaSelecionada);
+    const itensOcorrenciaNormalizados = normalizarItensOcorrencia();
 
     try {
       const usuarioAtual = auth.currentUser;
@@ -311,7 +361,10 @@ export default function EnviarFoto() {
         motivoRefacao: ehRefacao ? motivoRefacao : "",
       });
 
-      if (tipoOcorrenciaSelecionada && itensOcorrencia.length > 0) {
+      if (
+        tipoOcorrenciaSelecionada &&
+        itensOcorrenciaNormalizados.length > 0
+      ) {
         await criarOcorrenciaEstoque({
           tipo: tipoOcorrenciaSelecionada,
           fotoId: fotoRef.id,
@@ -322,7 +375,7 @@ export default function EnviarFoto() {
           promotorEmail: usuarioAtual.email || "",
           categoriaFoto: categoriaSelecionada,
           observacao: observacao.trim(),
-          itens: itensOcorrencia,
+          itens: itensOcorrenciaNormalizados,
           status: "pendente",
           criadoEm: serverTimestamp(),
         });
@@ -725,60 +778,279 @@ export default function EnviarFoto() {
 
                 <View style={{ gap: 8 }}>
                   {produtosFiltrados.map((produto) => {
-                    const selecionado = produtoSelecionadoId === produto.id;
+                    const indiceSelecionado = indiceItemOcorrencia(produto.id);
+                    const selecionado = indiceSelecionado >= 0;
+                    const itemSelecionado = itensOcorrencia[indiceSelecionado];
 
                     return (
-                      <Pressable
-                        key={produto.id}
-                        onPress={() => setProdutoSelecionadoId(produto.id)}
-                        disabled={enviando}
-                        style={{
-                          minHeight: 48,
-                          borderWidth: 1,
-                          borderColor: selecionado
-                            ? colors.primary
-                            : colors.border,
-                          borderRadius: 8,
-                          backgroundColor: selecionado
-                            ? colors.primarySurface
-                            : colors.backgroundAlt,
-                          paddingHorizontal: 11,
-                          paddingVertical: 8,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 10,
-                        }}
-                      >
-                        <MaterialIcons
-                          name={selecionado ? "check-circle" : "inventory-2"}
-                          size={21}
-                          color={selecionado ? colors.primary : colors.iconMuted}
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text
-                            numberOfLines={1}
+                      <View key={produto.id} style={{ gap: 8 }}>
+                        <Pressable
+                          onPress={() => alternarProdutoOcorrencia(produto)}
+                          disabled={enviando}
+                          style={{
+                            minHeight: 50,
+                            borderWidth: 1,
+                            borderColor: selecionado
+                              ? colors.primary
+                              : colors.border,
+                            borderRadius: 8,
+                            backgroundColor: selecionado
+                              ? colors.primarySurface
+                              : colors.backgroundAlt,
+                            paddingHorizontal: 11,
+                            paddingVertical: 8,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 10,
+                          }}
+                        >
+                          <MaterialIcons
+                            name={selecionado ? "check-circle" : "inventory-2"}
+                            size={21}
+                            color={selecionado ? colors.primary : colors.iconMuted}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                color: colors.text,
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {produto.codigo ? `${produto.codigo} - ` : ""}
+                              {produto.nome}
+                            </Text>
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                color: colors.textSubtle,
+                                fontSize: 12,
+                                paddingTop: 2,
+                              }}
+                            >
+                              {produto.marca || "Produto cadastrado"}
+                            </Text>
+                          </View>
+                          <MaterialIcons
+                            name={selecionado ? "expand-less" : "add"}
+                            size={22}
+                            color={selecionado ? colors.primary : colors.iconMuted}
+                          />
+                        </Pressable>
+
+                        {selecionado && itemSelecionado ? (
+                          <View
                             style={{
-                              color: colors.text,
-                              fontWeight: "bold",
+                              borderWidth: 1,
+                              borderColor: colors.border,
+                              borderRadius: 8,
+                              backgroundColor: colors.surfaceElevated,
+                              padding: 11,
+                              gap: 10,
                             }}
                           >
-                            {produto.codigo ? `${produto.codigo} - ` : ""}
-                            {produto.nome}
-                          </Text>
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              color: colors.textSubtle,
-                              fontSize: 12,
-                              paddingTop: 2,
-                            }}
-                          >
-                            {produto.complemento ||
-                              produto.fornecedor ||
-                              "Produto cadastrado"}
-                          </Text>
-                        </View>
-                      </Pressable>
+                            {tipoOcorrencia === "estoque" ? (
+                              <>
+                                <View style={{ flexDirection: "row", gap: 9 }}>
+                                  <CampoNumero
+                                    colors={colors}
+                                    rotulo="Estoque loja"
+                                    valor={itemSelecionado.estoqueLoja || ""}
+                                    onChange={(valor) =>
+                                      atualizarItemOcorrencia(
+                                        indiceSelecionado,
+                                        "estoqueLoja",
+                                        valor,
+                                      )
+                                    }
+                                  />
+                                  <CampoNumero
+                                    colors={colors}
+                                    rotulo="Estoque disponivel"
+                                    valor={
+                                      itemSelecionado.estoqueDisponivel || ""
+                                    }
+                                    onChange={(valor) =>
+                                      atualizarItemOcorrencia(
+                                        indiceSelecionado,
+                                        "estoqueDisponivel",
+                                        valor,
+                                      )
+                                    }
+                                  />
+                                </View>
+
+                                <Pressable
+                                  onPress={() =>
+                                    atualizarItemOcorrencia(
+                                      indiceSelecionado,
+                                      "ruptura",
+                                      !itemSelecionado.ruptura,
+                                    )
+                                  }
+                                  disabled={enviando}
+                                  style={{
+                                    minHeight: 44,
+                                    borderRadius: 8,
+                                    borderWidth: 1,
+                                    borderColor: itemSelecionado.ruptura
+                                      ? colors.warning
+                                      : colors.border,
+                                    backgroundColor: itemSelecionado.ruptura
+                                      ? colors.warningSurface
+                                      : colors.backgroundAlt,
+                                    paddingHorizontal: 11,
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    gap: 9,
+                                  }}
+                                >
+                                  <MaterialIcons
+                                    name={
+                                      itemSelecionado.ruptura
+                                        ? "check-box"
+                                        : "check-box-outline-blank"
+                                    }
+                                    size={22}
+                                    color={
+                                      itemSelecionado.ruptura
+                                        ? colors.warning
+                                        : colors.iconMuted
+                                    }
+                                  />
+                                  <Text
+                                    style={{
+                                      color: itemSelecionado.ruptura
+                                        ? colors.warningText
+                                        : colors.textMuted,
+                                      fontWeight: "bold",
+                                    }}
+                                  >
+                                    Produto em ruptura/falta
+                                  </Text>
+                                </Pressable>
+
+                                {itemSelecionado.ruptura ? (
+                                  <CampoNumero
+                                    colors={colors}
+                                    rotulo="Quantidade em ruptura"
+                                    valor={itemSelecionado.quantidadeRuptura || ""}
+                                    onChange={(valor) =>
+                                      atualizarItemOcorrencia(
+                                        indiceSelecionado,
+                                        "quantidadeRuptura",
+                                        valor,
+                                      )
+                                    }
+                                  />
+                                ) : null}
+                              </>
+                            ) : (
+                              <>
+                                <CampoNumero
+                                  colors={colors}
+                                  rotulo="Quantidade avariada/devolvida"
+                                  valor={itemSelecionado.quantidadeAvaria || ""}
+                                  onChange={(valor) =>
+                                    atualizarItemOcorrencia(
+                                      indiceSelecionado,
+                                      "quantidadeAvaria",
+                                      valor,
+                                    )
+                                  }
+                                />
+                                <GrupoOpcoes
+                                  colors={colors}
+                                  titulo="Motivo"
+                                  opcoes={MOTIVOS_AVARIA}
+                                  valor={
+                                    itemSelecionado.motivoAvaria ||
+                                    MOTIVOS_AVARIA[0]
+                                  }
+                                  onChange={(valor) =>
+                                    atualizarItemOcorrencia(
+                                      indiceSelecionado,
+                                      "motivoAvaria",
+                                      valor,
+                                    )
+                                  }
+                                />
+                                <GrupoOpcoes
+                                  colors={colors}
+                                  titulo="Destino"
+                                  opcoes={DESTINOS_AVARIA}
+                                  valor={
+                                    itemSelecionado.destinoAvaria ||
+                                    DESTINOS_AVARIA[0]
+                                  }
+                                  onChange={(valor) =>
+                                    atualizarItemOcorrencia(
+                                      indiceSelecionado,
+                                      "destinoAvaria",
+                                      valor,
+                                    )
+                                  }
+                                />
+                              </>
+                            )}
+
+                            <TextInput
+                              value={itemSelecionado.observacao || ""}
+                              onChangeText={(valor) =>
+                                atualizarItemOcorrencia(
+                                  indiceSelecionado,
+                                  "observacao",
+                                  valor,
+                                )
+                              }
+                              placeholder="Observacao deste produto"
+                              placeholderTextColor={colors.placeholder}
+                              editable={!enviando}
+                              style={{
+                                minHeight: 44,
+                                borderWidth: 1,
+                                borderColor: colors.border,
+                                borderRadius: 8,
+                                paddingHorizontal: 12,
+                                color: colors.text,
+                                backgroundColor: colors.backgroundAlt,
+                              }}
+                            />
+
+                            <Pressable
+                              onPress={() =>
+                                removerItemOcorrencia(indiceSelecionado)
+                              }
+                              disabled={enviando}
+                              style={{
+                                minHeight: 42,
+                                borderRadius: 8,
+                                borderWidth: 1,
+                                borderColor: colors.danger,
+                                backgroundColor: colors.dangerSurface,
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <MaterialIcons
+                                name="close"
+                                size={20}
+                                color={colors.danger}
+                              />
+                              <Text
+                                style={{
+                                  color: colors.danger,
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                Remover produto
+                              </Text>
+                            </Pressable>
+                          </View>
+                        ) : null}
+                      </View>
                     );
                   })}
 
@@ -790,199 +1062,39 @@ export default function EnviarFoto() {
                   ) : null}
                 </View>
 
-                {produtoSelecionado ? (
-                  <View style={{ gap: 10 }}>
-                    {tipoOcorrencia === "estoque" ? (
-                      <>
-                        <View style={{ flexDirection: "row", gap: 9 }}>
-                          <CampoNumero
-                            colors={colors}
-                            rotulo="Estoque loja"
-                            valor={estoqueLoja}
-                            onChange={setEstoqueLoja}
-                          />
-                          <CampoNumero
-                            colors={colors}
-                            rotulo="Estoque disponivel"
-                            valor={estoqueDisponivel}
-                            onChange={setEstoqueDisponivel}
-                          />
-                        </View>
-
-                        <Pressable
-                          onPress={() => setRuptura((atual) => !atual)}
-                          disabled={enviando}
-                          style={{
-                            minHeight: 44,
-                            borderRadius: 8,
-                            borderWidth: 1,
-                            borderColor: ruptura
-                              ? colors.warning
-                              : colors.border,
-                            backgroundColor: ruptura
-                              ? colors.warningSurface
-                              : colors.backgroundAlt,
-                            paddingHorizontal: 11,
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 9,
-                          }}
-                        >
-                          <MaterialIcons
-                            name={
-                              ruptura
-                                ? "check-box"
-                                : "check-box-outline-blank"
-                            }
-                            size={22}
-                            color={ruptura ? colors.warning : colors.iconMuted}
-                          />
-                          <Text
-                            style={{
-                              color: ruptura ? colors.warningText : colors.textMuted,
-                              fontWeight: "bold",
-                            }}
-                          >
-                            Produto em ruptura/falta
-                          </Text>
-                        </Pressable>
-
-                        {ruptura ? (
-                          <CampoNumero
-                            colors={colors}
-                            rotulo="Quantidade em ruptura"
-                            valor={quantidadeRuptura}
-                            onChange={setQuantidadeRuptura}
-                          />
-                        ) : null}
-                      </>
-                    ) : (
-                      <>
-                        <CampoNumero
-                          colors={colors}
-                          rotulo="Quantidade avariada/devolvida"
-                          valor={quantidadeAvaria}
-                          onChange={setQuantidadeAvaria}
-                        />
-                        <GrupoOpcoes
-                          colors={colors}
-                          titulo="Motivo"
-                          opcoes={MOTIVOS_AVARIA}
-                          valor={motivoAvaria}
-                          onChange={setMotivoAvaria}
-                        />
-                        <GrupoOpcoes
-                          colors={colors}
-                          titulo="Destino"
-                          opcoes={DESTINOS_AVARIA}
-                          valor={destinoAvaria}
-                          onChange={setDestinoAvaria}
-                        />
-                      </>
-                    )}
-
-                    <TextInput
-                      value={observacaoItem}
-                      onChangeText={setObservacaoItem}
-                      placeholder="Observacao deste produto"
-                      placeholderTextColor={colors.placeholder}
-                      editable={!enviando}
-                      style={{
-                        minHeight: 44,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        borderRadius: 8,
-                        paddingHorizontal: 12,
-                        color: colors.text,
-                        backgroundColor: colors.backgroundAlt,
-                      }}
+                {itensOcorrencia.length > 0 ? (
+                  <View
+                    style={{
+                      borderWidth: 1,
+                      borderColor: colors.primary,
+                      borderRadius: 8,
+                      backgroundColor: colors.primarySurface,
+                      padding: 10,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <MaterialIcons
+                      name="playlist-add-check"
+                      size={21}
+                      color={colors.primary}
                     />
-
-                    <Pressable
-                      onPress={adicionarItemOcorrencia}
-                      disabled={enviando}
+                    <Text
                       style={{
-                        minHeight: 46,
-                        borderRadius: 8,
-                        backgroundColor: colors.primary,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
+                        flex: 1,
+                        color: colors.primary,
+                        fontWeight: "bold",
                       }}
                     >
-                      <MaterialIcons name="add" size={22} color={colors.primaryText} />
-                      <Text style={{ color: colors.primaryText, fontWeight: "bold" }}>
-                        Adicionar produto
-                      </Text>
-                    </Pressable>
-                  </View>
-                ) : null}
-
-                {itensOcorrencia.length > 0 ? (
-                  <View style={{ gap: 8 }}>
-                    <Text style={{ color: colors.textMuted, fontWeight: "bold" }}>
-                      Produtos adicionados
+                      {itensOcorrencia.length} produto
+                      {itensOcorrencia.length > 1 ? "s" : ""} selecionado
+                      {itensOcorrencia.length > 1 ? "s" : ""}
                     </Text>
-                    {itensOcorrencia.map((item, indice) => (
-                      <View
-                        key={`${item.produtoId}-${indice}`}
-                        style={{
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          borderRadius: 8,
-                          backgroundColor: colors.backgroundAlt,
-                          padding: 11,
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 10,
-                        }}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: colors.text, fontWeight: "bold" }}>
-                            {item.codigo ? `${item.codigo} - ` : ""}
-                            {item.nome}
-                          </Text>
-                          <Text
-                            style={{
-                              color: colors.textSubtle,
-                              fontSize: 12,
-                              paddingTop: 3,
-                            }}
-                          >
-                            {tipoOcorrencia === "avaria"
-                              ? `${item.quantidadeAvaria || 0} un. - ${
-                                  item.destinoAvaria
-                                }`
-                              : `Loja: ${item.estoqueLoja || 0} / Disp.: ${
-                                  item.estoqueDisponivel || 0
-                                }${item.ruptura ? " / Ruptura" : ""}`}
-                          </Text>
-                        </View>
-                        <Pressable
-                          onPress={() => removerItemOcorrencia(indice)}
-                          accessibilityLabel="Remover produto"
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 7,
-                            backgroundColor: colors.dangerSurface,
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <MaterialIcons
-                            name="close"
-                            size={20}
-                            color={colors.danger}
-                          />
-                        </Pressable>
-                      </View>
-                    ))}
                   </View>
                 ) : (
                   <Text style={{ color: colors.warning, fontSize: 13 }}>
-                    Adicione pelo menos um produto para enviar esta categoria.
+                    Selecione pelo menos um produto para enviar esta categoria.
                   </Text>
                 )}
               </View>

@@ -2,10 +2,8 @@ export type Produto = {
   id: string;
   codigo?: string;
   nome: string;
-  complemento?: string;
   marca?: string;
-  fornecedor?: string;
-  categoria?: string;
+  imagemBase64?: string;
   ativo?: boolean;
   criadoEm?: any;
   atualizadoEm?: any;

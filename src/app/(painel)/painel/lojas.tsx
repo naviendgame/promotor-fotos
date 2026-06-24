@@ -25,7 +25,6 @@ import {
   lojasCollection,
 } from "@/services/lojas-service";
 import { useTheme } from "@/theme/theme-context";
-import type { ThemeColors } from "@/theme/colors";
 import type { Loja } from "@/types/loja";
 
 /**
@@ -46,6 +45,7 @@ export function useEstilosPainel() {
 
   return {
     colors,
+    scheme,
     tabela: {
       backgroundColor: colors.surface,
       borderWidth: 1,
