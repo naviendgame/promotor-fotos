@@ -19,6 +19,7 @@ export type OcorrenciaEstoque = {
   id: string;
   tipo: TipoOcorrenciaEstoque;
   fotoId: string;
+  visitaId?: string | null;
   lojaId: string;
   lojaNome: string;
   promotorId: string;

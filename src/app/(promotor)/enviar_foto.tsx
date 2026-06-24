@@ -36,6 +36,7 @@ import { criarFoto } from "@/services/fotos-service";
 import { criarOcorrenciaEstoque } from "@/services/ocorrencias-estoque-service";
 import { consultaProdutosAtivos } from "@/services/produtos-service";
 import { buscarUsuario } from "@/services/usuarios-service";
+import { criarVisita } from "@/services/visitas-service";
 import { useTheme } from "@/theme/theme-context";
 import type { ThemeColors } from "@/theme/colors";
 import type { ItemOcorrenciaEstoque } from "@/types/ocorrencia-estoque";
@@ -58,6 +59,15 @@ type ItemOcorrenciaFormulario = Omit<
   estoqueDisponivel?: string;
   quantidadeRuptura?: string;
   quantidadeAvaria?: string;
+};
+
+type FotoVisitaRascunho = {
+  id: string;
+  imagem: string;
+  categoria: string;
+  categoriaNome: string;
+  observacao: string;
+  itensOcorrencia: ItemOcorrenciaFormulario[];
 };
 
 export default function EnviarFoto() {
@@ -86,6 +96,7 @@ export default function EnviarFoto() {
   );
   const [etapaEnvio, setEtapaEnvio] = useState<EtapaEnvio>(null);
   const [envioConcluido, setEnvioConcluido] = useState(false);
+  const [fotosVisita, setFotosVisita] = useState<FotoVisitaRascunho[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [buscaProduto, setBuscaProduto] = useState("");
   const [itensOcorrencia, setItensOcorrencia] = useState<
@@ -95,11 +106,12 @@ export default function EnviarFoto() {
   const enviando = etapaEnvio !== null;
   const tipoOcorrencia = tipoOcorrenciaPorCategoria(categoria);
   const exigeOcorrencia = categoriaExigeOcorrenciaEstoque(categoria);
-  const formularioValido =
+  const fotoAtualValida =
     !!imagem &&
     !!categoria &&
-    (!exigeOcorrencia || itensOcorrencia.length > 0) &&
-    !enviando;
+    (!exigeOcorrencia || itensOcorrencia.length > 0);
+  const formularioValido =
+    (fotoAtualValida || fotosVisita.length > 0) && !enviando;
   const categoriaExibicao = nomeCategoriaFoto(categoria);
 
   const produtosFiltrados = useMemo(() => {
@@ -204,6 +216,13 @@ export default function EnviarFoto() {
     setItensOcorrencia([]);
   }
 
+  function limparFotoAtual() {
+    setImagem(null);
+    setCategoria(ehRefacao ? categoriaInicial || null : null);
+    setObservacao("");
+    limparFormularioItem();
+  }
+
   function criarItemOcorrenciaFormulario(
     produto: Produto,
   ): ItemOcorrenciaFormulario {
@@ -270,8 +289,13 @@ export default function EnviarFoto() {
     return itensOcorrencia.findIndex((item) => item.produtoId === produtoId);
   }
 
-  function normalizarItensOcorrencia(): ItemOcorrenciaEstoque[] {
-    return itensOcorrencia.map((item) => {
+  function normalizarItensOcorrencia(
+    itens: ItemOcorrenciaFormulario[],
+    categoriaFoto: string | null,
+  ): ItemOcorrenciaEstoque[] {
+    const tipo = tipoOcorrenciaPorCategoria(categoriaFoto);
+
+    return itens.map((item) => {
       const itemBase = {
         produtoId: item.produtoId,
         codigo: item.codigo || "",
@@ -280,7 +304,7 @@ export default function EnviarFoto() {
         observacao: item.observacao?.trim() || "",
       };
 
-      if (tipoOcorrencia === "avaria") {
+      if (tipo === "avaria") {
         return {
           ...itemBase,
           quantidadeAvaria: numeroOuZero(item.quantidadeAvaria || ""),
@@ -301,13 +325,46 @@ export default function EnviarFoto() {
     });
   }
 
-  async function enviarFoto() {
-    const categoriaSelecionada = categoria;
+  function criarRascunhoFotoAtual(): FotoVisitaRascunho | null {
+    if (!fotoAtualValida || !imagem || !categoria) return null;
 
-    if (!formularioValido || !imagem || !categoriaSelecionada) return;
-    const tipoOcorrenciaSelecionada =
-      tipoOcorrenciaPorCategoria(categoriaSelecionada);
-    const itensOcorrenciaNormalizados = normalizarItensOcorrencia();
+    return {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      imagem,
+      categoria,
+      categoriaNome: nomeCategoriaFoto(categoria) || categoria,
+      observacao: observacao.trim(),
+      itensOcorrencia: itensOcorrencia.map((item) => ({ ...item })),
+    };
+  }
+
+  function adicionarFotoNaVisita() {
+    const rascunho = criarRascunhoFotoAtual();
+
+    if (!rascunho) {
+      Alert.alert(
+        "Foto incompleta",
+        "Anexe a foto, escolha a categoria e preencha os dados obrigatorios antes de adicionar.",
+      );
+      return;
+    }
+
+    setFotosVisita((atuais) => [...atuais, rascunho]);
+    limparFotoAtual();
+  }
+
+  function removerFotoDaVisita(id: string) {
+    if (enviando) return;
+    setFotosVisita((atuais) => atuais.filter((foto) => foto.id !== id));
+  }
+
+  async function enviarFoto() {
+    const fotoAtual = criarRascunhoFotoAtual();
+    const fotosParaEnviar = fotoAtual
+      ? [...fotosVisita, fotoAtual]
+      : fotosVisita;
+
+    if (!formularioValido || fotosParaEnviar.length === 0) return;
 
     try {
       const usuarioAtual = auth.currentUser;
@@ -323,7 +380,6 @@ export default function EnviarFoto() {
       }
 
       setEtapaEnvio("preparando");
-      const imagemBase64 = await prepararImagemBase64(imagem);
       const usuarioSnap = await buscarUsuario(usuarioAtual.uid);
 
       if (!usuarioSnap.exists() || usuarioSnap.data().ativo === false) {
@@ -343,42 +399,70 @@ export default function EnviarFoto() {
         "";
 
       setEtapaEnvio("enviando");
-      const fotoRef = await criarFoto({
+      const visitaRef = await criarVisita({
         lojaId,
         lojaNome,
         promotorId: usuarioAtual.uid,
         promotorNome,
         promotorEmail: usuarioAtual.email || "",
-        imagemBase64,
-        categoria: categoriaSelecionada,
         status: "pendente",
-        comentarioAdmin: "",
-        observacao: observacao.trim(),
+        totalFotos: fotosParaEnviar.length,
         criadoEm: serverTimestamp(),
-        naLixeira: false,
-        refacaoDeId: refacaoDeId || null,
-        numeroRefacao: ehRefacao ? numeroRefacao : 0,
-        motivoRefacao: ehRefacao ? motivoRefacao : "",
+        atualizadoEm: serverTimestamp(),
       });
 
-      if (
-        tipoOcorrenciaSelecionada &&
-        itensOcorrenciaNormalizados.length > 0
-      ) {
-        await criarOcorrenciaEstoque({
-          tipo: tipoOcorrenciaSelecionada,
-          fotoId: fotoRef.id,
+      for (const [indice, foto] of fotosParaEnviar.entries()) {
+        setEtapaEnvio("preparando");
+        const imagemBase64 = await prepararImagemBase64(foto.imagem);
+        const tipoOcorrenciaSelecionada =
+          tipoOcorrenciaPorCategoria(foto.categoria);
+        const itensOcorrenciaNormalizados = normalizarItensOcorrencia(
+          foto.itensOcorrencia,
+          foto.categoria,
+        );
+
+        setEtapaEnvio("enviando");
+        const fotoRef = await criarFoto({
           lojaId,
           lojaNome,
           promotorId: usuarioAtual.uid,
           promotorNome,
           promotorEmail: usuarioAtual.email || "",
-          categoriaFoto: categoriaSelecionada,
-          observacao: observacao.trim(),
-          itens: itensOcorrenciaNormalizados,
+          imagemBase64,
+          categoria: foto.categoria,
           status: "pendente",
+          comentarioAdmin: "",
+          observacao: foto.observacao,
           criadoEm: serverTimestamp(),
+          visitaId: visitaRef.id,
+          indiceNaVisita: indice + 1,
+          totalFotosVisita: fotosParaEnviar.length,
+          naLixeira: false,
+          refacaoDeId: ehRefacao ? refacaoDeId || null : null,
+          numeroRefacao: ehRefacao ? numeroRefacao : 0,
+          motivoRefacao: ehRefacao ? motivoRefacao : "",
         });
+
+        if (
+          tipoOcorrenciaSelecionada &&
+          itensOcorrenciaNormalizados.length > 0
+        ) {
+          await criarOcorrenciaEstoque({
+            tipo: tipoOcorrenciaSelecionada,
+            fotoId: fotoRef.id,
+            visitaId: visitaRef.id,
+            lojaId,
+            lojaNome,
+            promotorId: usuarioAtual.uid,
+            promotorNome,
+            promotorEmail: usuarioAtual.email || "",
+            categoriaFoto: foto.categoria,
+            observacao: foto.observacao,
+            itens: itensOcorrenciaNormalizados,
+            status: "pendente",
+            criadoEm: serverTimestamp(),
+          });
+        }
       }
 
       setEnvioConcluido(true);
@@ -394,11 +478,8 @@ export default function EnviarFoto() {
   }
 
   function prepararNovoEnvio() {
-    setImagem(null);
-    setCategoria(ehRefacao ? categoriaInicial || null : null);
-    setObservacao("");
-    setItensOcorrencia([]);
-    limparFormularioItem();
+    limparFotoAtual();
+    setFotosVisita([]);
     setEnvioConcluido(false);
   }
 
@@ -637,7 +718,7 @@ export default function EnviarFoto() {
         </View>
       </View>
 
-      {imagem ? (
+      {imagem || fotosVisita.length > 0 ? (
         <>
           <View style={{ gap: 12 }}>
             <TituloSecao colors={colors} numero="2" titulo="Categoria e observação" />
@@ -1102,7 +1183,138 @@ export default function EnviarFoto() {
           </View>
 
           <View style={{ gap: 12 }}>
-            <TituloSecao colors={colors} numero="3" titulo="Revisão" />
+            <TituloSecao colors={colors} numero="3" titulo="Fotos da visita" />
+
+            {fotosVisita.length > 0 ? (
+              <View style={{ gap: 9 }}>
+                {fotosVisita.map((foto, indice) => (
+                  <View
+                    key={foto.id}
+                    style={{
+                      minHeight: 72,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 8,
+                      backgroundColor: colors.surface,
+                      padding: 10,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                  >
+                    <Image
+                      source={{ uri: foto.imagem }}
+                      style={{
+                        width: 54,
+                        height: 54,
+                        borderRadius: 7,
+                        backgroundColor: colors.surfaceHighlight,
+                      }}
+                      contentFit="cover"
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.text, fontWeight: "bold" }}>
+                        Foto {indice + 1} - {foto.categoriaNome}
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          color: colors.textSubtle,
+                          fontSize: 12,
+                          paddingTop: 3,
+                        }}
+                      >
+                        {foto.itensOcorrencia.length > 0
+                          ? `${foto.itensOcorrencia.length} produto(s) informado(s)`
+                          : foto.observacao || "Sem observacao"}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => removerFotoDaVisita(foto.id)}
+                      disabled={enviando}
+                      accessibilityLabel="Remover foto da visita"
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 7,
+                        backgroundColor: colors.dangerSurface,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <MaterialIcons
+                        name="close"
+                        size={20}
+                        color={colors.danger}
+                      />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  backgroundColor: colors.surface,
+                  padding: 13,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <MaterialIcons
+                  name="collections"
+                  size={22}
+                  color={colors.iconMuted}
+                />
+                <Text style={{ flex: 1, color: colors.textSubtle }}>
+                  Esta sera a primeira foto da visita.
+                </Text>
+              </View>
+            )}
+
+            {!ehRefacao ? (
+              <Pressable
+                onPress={adicionarFotoNaVisita}
+                disabled={!fotoAtualValida || enviando}
+                style={{
+                  minHeight: 48,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: fotoAtualValida
+                    ? colors.primary
+                    : colors.borderStrong,
+                  backgroundColor: fotoAtualValida
+                    ? colors.primarySurface
+                    : colors.surfaceElevated,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  opacity: fotoAtualValida && !enviando ? 1 : 0.7,
+                }}
+              >
+                <MaterialIcons
+                  name="add-photo-alternate"
+                  size={21}
+                  color={fotoAtualValida ? colors.primary : colors.textSubtle}
+                />
+                <Text
+                  style={{
+                    color: fotoAtualValida ? colors.primary : colors.textSubtle,
+                    fontWeight: "bold",
+                  }}
+                >
+                  Adicionar esta foto a visita
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <View style={{ gap: 12 }}>
+            <TituloSecao colors={colors} numero="4" titulo="Revisão" />
 
             <View
               style={{
@@ -1120,10 +1332,14 @@ export default function EnviarFoto() {
               <LinhaResumo
                 colors={colors}
                 icone="category"
-                titulo="Categoria"
-                valor={categoriaExibicao || "Não selecionada"}
+                titulo="Conteudo"
+                valor={
+                  fotosVisita.length > 0
+                    ? `${fotosVisita.length + (fotoAtualValida ? 1 : 0)} foto(s) na visita`
+                    : categoriaExibicao || "Não selecionada"
+                }
                 separador
-                alerta={!categoria}
+                alerta={!formularioValido}
               />
               <LinhaResumo
                 colors={colors}
@@ -1171,8 +1387,8 @@ export default function EnviarFoto() {
                 {etapaEnvio === "preparando"
                   ? "Preparando imagem..."
                   : etapaEnvio === "enviando"
-                    ? "Enviando foto..."
-                    : "Enviar foto"}
+                    ? "Enviando visita..."
+                    : "Enviar visita"}
               </Text>
             </Pressable>
           </View>
@@ -1220,12 +1436,12 @@ export default function EnviarFoto() {
               <Text style={{ color: colors.text, fontSize: 21, fontWeight: "bold" }}>
                 {ehRefacao
                   ? "Nova foto enviada para análise"
-                  : "Foto enviada para análise"}
+                  : "Visita enviada para análise"}
               </Text>
               <Text style={{ color: colors.textSubtle, lineHeight: 21 }}>
                 {ehRefacao
                   ? "A versão anterior foi preservada no histórico e esta nova foto está pendente de avaliação."
-                  : "O responsável poderá aprovar, rejeitar ou solicitar uma nova foto."}
+                  : "O responsável poderá avaliar as fotos enviadas nessa visita."}
               </Text>
             </View>
 
@@ -1246,7 +1462,7 @@ export default function EnviarFoto() {
                 <Text style={{ color: colors.primaryText, fontWeight: "bold" }}>
                   {ehRefacao
                     ? "Enviar outra foto para esta loja"
-                    : "Enviar outra para esta loja"}
+                    : "Registrar outra visita nesta loja"}
                 </Text>
               </Pressable>
 

@@ -437,7 +437,7 @@ export default function Promotor() {
                   color={colors.primaryText}
                 />
                 <Text style={{ color: colors.primaryText, fontWeight: "bold" }}>
-                  Enviar foto
+                  Registrar visita
                 </Text>
               </Pressable>
             </View>

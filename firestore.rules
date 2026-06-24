@@ -115,6 +115,21 @@ service cloud.firestore {
       allow update, delete: if admin();
     }
 
+    match /visitas/{visitaId} {
+      allow read: if admin()
+        || (
+          usuarioAtivo()
+          && resource.data.promotorId == request.auth.uid
+        );
+
+      allow create: if usuarioAtivo()
+        && usuarioAtual().tipo == "promotor"
+        && request.resource.data.promotorId == request.auth.uid
+        && request.resource.data.status == "pendente";
+
+      allow update, delete: if admin();
+    }
+
     match /notificacoes/{notificacaoId} {
       allow create: if admin();
 

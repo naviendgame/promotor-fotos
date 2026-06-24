@@ -33,6 +33,7 @@ import {
   filtrarFotosNaLixeira,
   obterCategoriaFoto as obterCategoria,
   obterImagemUri,
+  obterRotuloVisita,
   ordenarFotosRecentes,
 } from "@/utils/fotos";
 import {
@@ -509,6 +510,25 @@ export default function MinhasFotos() {
                   </View>
                 ) : null}
 
+                {obterRotuloVisita(item) ? (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 7,
+                    }}
+                  >
+                    <MaterialIcons
+                      name="collections"
+                      size={18}
+                      color={colors.primary}
+                    />
+                    <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                      {obterRotuloVisita(item)}
+                    </Text>
+                  </View>
+                ) : null}
+
                 <View style={{ flexDirection: "row", gap: 9 }}>
                   {modo === "ativas" && status === "refazer" ? (
                     <Pressable
@@ -741,6 +761,11 @@ export default function MinhasFotos() {
                 {obterCategoria(fotoSelecionada)} ·{" "}
                 {formatarData(fotoSelecionada.criadoEm)}
               </Text>
+              {obterRotuloVisita(fotoSelecionada) ? (
+                <Text style={{ color: "#BFDBFE", fontWeight: "bold" }}>
+                  {obterRotuloVisita(fotoSelecionada)}
+                </Text>
+              ) : null}
               <Text
                 style={{
                   color: visualStatus(obterStatus(fotoSelecionada)).texto,

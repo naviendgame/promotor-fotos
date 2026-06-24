@@ -10,6 +10,16 @@ export function obterCategoriaFoto(foto: Pick<Foto, "categoria">) {
   return foto.categoria || SEM_CATEGORIA;
 }
 
+export function obterRotuloVisita(
+  foto: Pick<Foto, "visitaId" | "indiceNaVisita" | "totalFotosVisita">,
+) {
+  if (!foto.visitaId) return "";
+
+  const indice = foto.indiceNaVisita || 1;
+  const total = foto.totalFotosVisita || 1;
+  return `Visita ${indice}/${total}`;
+}
+
 export function ordenarFotosRecentes<T extends Pick<Foto, "criadoEm">>(
   fotos: T[],
 ) {

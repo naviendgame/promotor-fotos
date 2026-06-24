@@ -27,6 +27,7 @@ import { obterData } from "@/utils/datas";
 import {
   filtrarFotosAtuais,
   obterImagemUri as imagemDaFoto,
+  obterRotuloVisita,
 } from "@/utils/fotos";
 import { visualStatusPorTema } from "@/utils/status-foto";
 
@@ -333,6 +334,35 @@ export default function FotosWeb() {
                       </Text>
                     </View>
                   ) : null}
+                  {obterRotuloVisita(foto) ? (
+                    <View
+                      style={{
+                        alignSelf: "flex-start",
+                        backgroundColor: colors.primarySurface,
+                        borderRadius: 5,
+                        paddingVertical: 5,
+                        paddingHorizontal: 8,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <MaterialIcons
+                        name="collections"
+                        size={15}
+                        color={colors.primary}
+                      />
+                      <Text
+                        style={{
+                          color: colors.primary,
+                          fontSize: 11,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {obterRotuloVisita(foto)}
+                      </Text>
+                    </View>
+                  ) : null}
                   <View
                     style={{
                       flexDirection: "row",
@@ -528,6 +558,13 @@ export default function FotosWeb() {
                       "Sem data"
                     }
                   />
+                  {obterRotuloVisita(fotoAberta) ? (
+                    <Info
+                      colors={colors}
+                      titulo="Visita"
+                      valor={obterRotuloVisita(fotoAberta)}
+                    />
+                  ) : null}
                   <Info
                     colors={colors}
                     titulo="Observacao"

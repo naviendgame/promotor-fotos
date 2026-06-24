@@ -16,6 +16,9 @@ export type Foto = {
   comentarioAdmin?: string;
   criadoEm?: any;
   avaliadaEm?: any;
+  visitaId?: string | null;
+  indiceNaVisita?: number;
+  totalFotosVisita?: number;
   naLixeira?: boolean;
   excluidaEm?: any;
   excluidaPor?: string | null;
